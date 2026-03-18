@@ -2,27 +2,22 @@
 # 用于本地开发和生产部署
 
 services:
-  # MySQL 数据库
-  mysql:
-    image: mysql:8.0
-    container_name: content-agent-mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-content_agent}
-      MYSQL_USER: ${MYSQL_USER:-content_agent}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-content123}
-    ports:
-      - "${MYSQL_PORT:-3306}:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - content-agent-net
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # MySQL 数据库（可选，目前后端使用内存存储）
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: content-agent-mysql
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+  #     MYSQL_DATABASE: ${MYSQL_DATABASE:-content_agent}
+  #     MYSQL_USER: ${MYSQL_USER:-content_agent}
+  #     MYSQL_PASSWORD: ${MYSQL_PASSWORD:-content123}
+  #   ports:
+  #     - "3307:3306"
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+  #   networks:
+  #     - content-agent-net
 
   # Qdrant 向量数据库
   qdrant:
@@ -57,13 +52,13 @@ services:
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_BASE_URL=${LLM_BASE_URL:-https://api.deepseek.com}
       - LLM_MODEL=${LLM_MODEL:-deepseek-chat}
+      - SILICONFLOW_API_KEY=${SILICONFLOW_API_KEY}
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
       - DEBUG=${DEBUG:-false}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
-      mysql:
-        condition: service_healthy
-      qdrant:
-        condition: service_healthy
+      - qdrant
     networks:
       - content-agent-net
 
@@ -82,8 +77,8 @@ services:
       - content-agent-net
 
 volumes:
-  mysql_data:
   qdrant_data:
+    driver: local
 
 networks:
   content-agent-net:

@@ -15,7 +15,7 @@ COPY . .
 RUN npm run build
 
 # Nginx 生产镜像
-FROM nginx:alpine
+FROM nginx:latest
 
 # 复制构建产物
 COPY --from=builder /app/dist /usr/share/nginx/html

@@ -1,5 +1,9 @@
 FROM python:3.11-slim
 
+# 设置国内镜像源
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip config set global.trusted-host mirrors.aliyun.com
+
 # 设置工作目录
 WORKDIR /app
 
@@ -11,7 +15,6 @@ ENV LC_ALL=C.UTF-8
 
 # 安装系统依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
     default-libmysqlclient-dev \
     pkg-config \
     curl \
