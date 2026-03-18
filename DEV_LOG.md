@@ -143,7 +143,36 @@ backend/app/services/
 
 ---
 
-## Phase 4 - 待开发
+## Phase 4 - 商品管理模块（2026-03-18）
+
+### 完成内容
+- ✅ 商品管理 API（增删改查）
+- ✅ 预置示例商品数据
+- ✅ 违禁词数量查询接口
+- ✅ 更新部署配置说明文档
+- ✅ 更新 API Key 配置说明
+
+### 新增文件
+```
+backend/app/api/
+└── products.py    # 商品管理 API
+```
+
+### API 接口
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/v1/products | 获取商品列表 |
+| GET | /api/v1/products/{sku_id} | 获取单个商品 |
+| POST | /api/v1/products | 创建商品 |
+| DELETE | /api/v1/products/{sku_id} | 删除商品 |
+
+### 预置商品
+- SKU 12345: 控油修护精华液
+- SKU 67890: 氨基酸洁面乳
+
+---
+
+## Phase 5 - 待开发
 
 ---
 

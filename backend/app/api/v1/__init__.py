@@ -99,3 +99,8 @@ async def compliance_check(request: ComplianceCheckRequest):
 async def compliance_word_count():
     """获取违禁词数量"""
     return {"word_count": get_word_count()}
+
+
+# 注册商品管理路由
+from app.api.products import router as products_router
+router.include_router(products_router, tags=["商品管理"])

@@ -65,11 +65,31 @@ Agent 核心决策，接收直播多模态数据，返回提词指令。
 ### POST `/products`
 新增商品
 
+**请求体：**
+```json
+{
+  "sku_id": "12345",
+  "name": "控油修护精华液",
+  "category": "护肤品",
+  "brand": "品牌A",
+  "spec": "30ml",
+  "price": 350,
+  "original_price": 499,
+  "ingredients": ["水杨酸", "烟酰胺", "透明质酸"],
+  "effects": ["控油", "修护", "保湿"],
+  "description": "专为油皮设计的控油修护精华",
+  "selling_points": ["油皮亲妈", "持久控油"]
+}
+```
+
+### GET `/products`
+获取商品列表
+
 ### GET `/products/{sku_id}`
 查询商品详情
 
-### GET `/products`
-商品列表
+### DELETE `/products/{sku_id}`
+删除商品
 
 ---
 
@@ -92,9 +112,27 @@ Agent 核心决策，接收直播多模态数据，返回提词指令。
 }
 ```
 
+### GET `/compliance/word-count`
+获取违禁词库数量
+
 ---
 
-## 4. 健康检查
+## 4. LLM 测试接口
+
+### POST `/llm/test`
+测试 LLM 连接
+
+**请求体：**
+```json
+{
+  "prompt": "你好",
+  "system_prompt": "你是一个helpful的AI助手"
+}
+```
+
+---
+
+## 5. 健康检查
 
 ### GET `/health`
 ```json
