@@ -71,7 +71,7 @@ class DecisionAgent:
                 print(f"[RAG] 搜索到 {len(rag_results)} 条相关知识")
 
         # 2.4 卖点拆解模块
-        selling_result = generate_selling_points(product_data, user_questions, rag_context)
+        selling_result = generate_selling_points(product_data, user_questions)
 
         # 2.3 内容结构引擎
         current_stage_info = get_current_stage(
@@ -107,7 +107,8 @@ class DecisionAgent:
             final_instruction = best_candidate["提词内容"]
 
         # 5. 合规检查
-        compliance_result = check_compliance(final_instruction.get("建议话术", ""))
+        suggestion = final_instruction.get("建议话术", "") or ""
+        compliance_result = check_compliance(suggestion)
 
         # 6. 构建最终输出
         output = {
@@ -117,6 +118,14 @@ class DecisionAgent:
                 "动作建议": final_instruction.get("动作建议", ""),
                 "触发原因": final_instruction.get("触发原因", ""),
                 "合规检查": "通过" if compliance_result.get("passed") else f"有{len(compliance_result.get('violations', []))}处需修改"
+            },
+            "直播结构": {
+                "当前阶段": current_stage_info.get("当前阶段"),
+                "阶段描述": current_stage_info.get("阶段描述"),
+                "下一阶段": current_stage_info.get("下一阶段"),
+                "阶段提示": current_stage_info.get("阶段提示"),
+                "下一阶段准备": current_stage_info.get("下一阶段准备"),
+                "阶段切换建议": stage_advice
             }
         }
 

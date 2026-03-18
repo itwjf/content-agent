@@ -2,10 +2,9 @@
 商品管理模块 - Product API
 """
 from typing import List
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
-from app.core.database import get_db
 from app.schemas.schemas import ProductCreate, ProductResponse
 
 router = APIRouter()

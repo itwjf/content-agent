@@ -197,3 +197,94 @@ A: 查看日志排查：`docker-compose logs backend`
 3. 定期轮换 API Key
 4. 使用 Docker Secrets 管理敏感信息
 5. 生产环境建议配置 HTTPS
+
+## 8. 依赖清单
+
+### 8.1 后端依赖
+
+| 依赖 | 版本 | 用途 |
+|------|------|------|
+| fastapi | ^0.104.1 | Web框架 |
+| uvicorn[standard] | ^0.24.0 | ASGI服务器 |
+| pydantic | ^2.5.0 | 数据验证 |
+| pydantic-settings | ^2.1.0 | 配置管理 |
+| qdrant-client | ^1.7.4 | 向量数据库客户端 |
+| mysql-connector-python | ^8.2.0 | MySQL驱动 |
+| transformers | ^4.35.0 | 文本处理 |
+| sentence-transformers | ^2.2.2 | 文本向量化 |
+| requests | ^2.31.0 | HTTP客户端 |
+| python-dotenv | ^1.0.0 | 环境变量管理 |
+| loguru | ^0.7.2 | 日志管理 |
+
+### 8.2 前端依赖
+
+| 依赖 | 版本 | 用途 |
+|------|------|------|
+| vue | ^3.3.4 | 前端框架 |
+| element-plus | ^2.3.12 | UI组件库 |
+| axios | ^1.6.0 | HTTP客户端 |
+| pinia | ^2.1.7 | 状态管理 |
+| vue-router | ^4.2.5 | 路由管理 |
+
+## 9. 环境配置详细说明
+
+### 9.1 后端环境变量
+
+| 环境变量 | 类型 | 默认值 | 说明 |
+|---------|------|--------|------|
+| `LLM_API_KEY` | 字符串 | - | LLM API密钥（必填） |
+| `LLM_BASE_URL` | 字符串 | `https://api.deepseek.com` | LLM API地址 |
+| `LLM_MODEL` | 字符串 | `deepseek-chat` | 使用的模型名称 |
+| `DEBUG` | 布尔值 | `false` | 调试模式 |
+| `LOG_LEVEL` | 字符串 | `INFO` | 日志级别 |
+| `DATABASE_URL` | 字符串 | `mysql://root:password@localhost:3306/content_agent` | 数据库连接字符串 |
+| `QDRANT_URL` | 字符串 | `http://localhost:6333` | Qdrant向量数据库地址 |
+| `QDRANT_API_KEY` | 字符串 | - | Qdrant API密钥（如启用） |
+| `SECRET_KEY` | 字符串 | - | 应用密钥 |
+
+### 9.2 前端环境变量
+
+| 环境变量 | 类型 | 默认值 | 说明 |
+|---------|------|--------|------|
+| `VITE_API_BASE_URL` | 字符串 | `http://localhost:8000/api/v1` | 后端API基础地址 |
+| `VITE_APP_TITLE` | 字符串 | `ContentAgent` | 应用标题 |
+| `VITE_DEBUG` | 布尔值 | `false` | 调试模式 |
+
+## 10. 开发与生产环境差异
+
+| 配置项 | 开发环境 | 生产环境 |
+|--------|---------|----------|
+| `DEBUG` | `true` | `false` |
+| `LOG_LEVEL` | `DEBUG` | `INFO` |
+| `前端服务` | Vite开发服务器 | Nginx静态服务 |
+| `后端服务` | 热重载模式 | 生产模式 |
+| `数据库` | 本地或Docker容器 | 独立数据库服务 |
+| `Qdrant` | 本地或Docker容器 | 独立向量数据库服务 |
+
+## 11. 监控与维护
+
+### 11.1 日志管理
+
+- **后端日志**：存储在 `backend/logs/` 目录
+- **Docker日志**：使用 `docker-compose logs` 查看
+- **前端日志**：浏览器控制台和Nginx日志
+
+### 11.2 常见问题排查
+
+**Q: 后端服务启动失败？**
+A: 检查 `LLM_API_KEY` 是否正确设置，查看日志：`docker-compose logs backend`
+
+**Q: 前端无法连接后端？**
+A: 检查 `VITE_API_BASE_URL` 配置，确保后端服务正常运行
+
+**Q: Qdrant搜索失败？**
+A: 检查 Qdrant 服务状态：`docker-compose ps qdrant`，查看日志：`docker-compose logs qdrant`
+
+**Q: 数据库连接失败？**
+A: 检查 MySQL 服务状态和连接字符串配置
+
+### 11.3 性能监控
+
+- 使用 FastAPI 内置的 `/metrics` 端点监控服务性能
+- 配置 Prometheus 和 Grafana 进行更详细的监控
+- 定期检查 Qdrant 向量库大小和查询性能

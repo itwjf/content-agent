@@ -246,18 +246,49 @@ class RAGService:
 
         if self.use_qdrant:
             try:
-                # 在 Qdrant 中搜索
-                search_results = self.qdrant_client.search(
+                # 在 Qdrant 中搜索 - 兼容不同版本的 API
+                search_results = self.qdrant_client.query_points(
                     collection_name=collection_name,
-                    query_vector=query_vector,
+                    query=query_vector,
                     limit=top_k
                 )
 
-                for result in search_results:
+                # 尝试不同的属性访问方式
+                if hasattr(search_results, 'results'):
+                    # 旧版本 API
+                    items = search_results.results
+                elif hasattr(search_results, 'points'):
+                    # 新版本 API
+                    items = search_results.points
+                else:
+                    # 其他版本 API
+                    items = []
+
+                for result in items:
+                    # 尝试不同的属性访问方式
+                    if hasattr(result, 'payload'):
+                        # 旧版本 API
+                        text = result.payload.get("text", "")
+                        metadata = result.payload.get("metadata", {})
+                    elif hasattr(result, 'vector'):
+                        # 新版本 API
+                        text = result.vector.get("text", "")
+                        metadata = result.vector.get("metadata", {})
+                    else:
+                        # 其他版本 API
+                        text = ""
+                        metadata = {}
+
+                    # 尝试不同的分数访问方式
+                    if hasattr(result, 'score'):
+                        score = result.score
+                    else:
+                        score = 0.0
+
                     results.append({
-                        "text": result.payload.get("text", ""),
-                        "score": result.score,
-                        "metadata": result.payload.get("metadata", {})
+                        "text": text,
+                        "score": score,
+                        "metadata": metadata
                     })
                 print(f"[RAG] Qdrant 搜索完成，返回 {len(results)} 条结果")
             except Exception as e:

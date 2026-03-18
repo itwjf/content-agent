@@ -1,0 +1,43 @@
+# MySQL版本的后端Dockerfile
+FROM python:3.11-slim
+
+# 设置国内镜像源
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip config set global.trusted-host mirrors.aliyun.com
+
+# 设置工作目录
+WORKDIR /app
+
+# 设置环境变量
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# 安装系统依赖（包含MySQL客户端）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    default-libmysqlclient-dev \
+    pkg-config \
+    curl \
+    gcc \
+    mariadb-client-compat \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制依赖文件
+COPY requirements.txt .
+
+# 安装 Python 依赖
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 复制 wait-for-mysql.sh 脚本
+COPY wait-for-mysql.sh .
+RUN chmod +x wait-for-mysql.sh
+
+# 复制应用代码
+COPY . .
+
+# 暴露端口
+EXPOSE 8000
+
+# 启动命令（等待MySQL就绪后启动）
+CMD ["/app/wait-for-mysql.sh", "mysql", "3306", "--", "python", "-m", "app.main_mysql"]

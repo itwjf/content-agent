@@ -214,6 +214,18 @@ class SellingPointModule:
 
         # 无论是否有匹配卖点，都尝试调用 LLM 生成话术
         try:
+            # 从RAG知识库中检索相关信息
+            from app.services.rag_service import rag_service
+            search_query = f"{product_name} {effect_str}"
+            rag_results = rag_service.search("products", search_query, top_k=3)
+            
+            # 构建RAG上下文
+            if rag_results:
+                rag_context = "\n\n参考知识库内容：\n"
+                for i, result in enumerate(rag_results):
+                    rag_context += f"{i+1}. {result['text']}\n"
+                print(f"[RAG] 检索到 {len(rag_results)} 条相关信息")
+            
             prompt = self._build_llm_prompt(product_data, matched_points or [], rag_context)
             print(f"[LLM] 开始调用，prompt 长度: {len(prompt)}")
             llm_script = call_llm(
@@ -225,8 +237,6 @@ class SellingPointModule:
         except Exception as e:
             print(f"[LLM] 调用失败，降级为基础话术: {e}")
             return base_script
-
-        return base_script
 
     def _build_llm_prompt(self, product_data: Dict, matched_points: List[Dict], rag_context: str = "") -> str:
         """构建 LLM 生成话术的 prompt"""

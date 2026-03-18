@@ -7,9 +7,17 @@
           <template #header>
             <div class="card-header">
               <span>📊 直播数据输入</span>
-              <el-button type="primary" @click="simulateInput" :loading="loading">
-                模拟数据
-              </el-button>
+              <div>
+                <el-select v-model="testScenario" placeholder="选择测试场景" style="margin-right: 10px;">
+                  <el-option label="默认场景" value="default" />
+                  <el-option label="产品讲解期" value="product_intro" />
+                  <el-option label="促单期" value="promotion" />
+                  <el-option label="问答互动期" value="qna" />
+                </el-select>
+                <el-button type="primary" @click="simulateInput" :loading="loading">
+                  填充测试数据
+                </el-button>
+              </div>
             </div>
           </template>
 
@@ -67,6 +75,30 @@
               <el-input-number v-model="inputData.后台数据.在线人数" :min="0" />
             </el-form-item>
 
+            <!-- 文件上传 -->
+            <el-divider content-position="left">产品文档上传</el-divider>
+            <el-form-item label="上传文档">
+              <el-upload
+                class="upload-demo"
+                action="/api/v1/products/upload"
+                :on-success="handleUploadSuccess"
+                :on-error="handleUploadError"
+                :file-list="fileList"
+                :auto-upload="false"
+                ref="upload"
+              >
+                <el-button type="primary">选择文件</el-button>
+                <template #tip>
+                  <div class="el-upload__tip">
+                    支持上传 txt、md、pdf、doc、docx 格式的文件，用于构建产品知识库
+                  </div>
+                </template>
+              </el-upload>
+              <el-button type="info" @click="$refs.upload.submit()" style="margin-left: 10px;">
+                上传并添加到知识库
+              </el-button>
+            </el-form-item>
+
             <el-form-item>
               <el-button type="success" @click="submitDecision" :loading="loading" size="large">
                 🚀 获取提词建议
@@ -94,6 +126,44 @@
               show-icon
               style="margin-bottom: 20px"
             />
+
+            <!-- 直播内容结构信息 -->
+            <div v-if="outputData.直播结构" class="stage-info" style="margin-bottom: 20px">
+              <el-card class="stage-card" shadow="hover">
+                <template #header>
+                  <div class="card-header">
+                    <span>📅 直播结构信息</span>
+                  </div>
+                </template>
+                <el-descriptions :column="1" border>
+                  <el-descriptions-item label="当前阶段">
+                    <el-tag type="primary">{{ outputData.直播结构.当前阶段 }}</el-tag>
+                  </el-descriptions-item>
+                  <el-descriptions-item label="阶段描述">
+                    {{ outputData.直播结构.阶段描述 }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="下一阶段">
+                    {{ outputData.直播结构.下一阶段 || '无' }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="阶段提示">
+                    <el-tag v-for="(tip, index) in outputData.直播结构.阶段提示" :key="index" type="info" style="margin-right: 10px; margin-bottom: 10px">
+                      {{ tip }}
+                    </el-tag>
+                  </el-descriptions-item>
+                  <el-descriptions-item label="下一阶段准备">
+                    <el-tag v-for="(tip, index) in outputData.直播结构.下一阶段准备" :key="index" type="warning" style="margin-right: 10px; margin-bottom: 10px">
+                      {{ tip }}
+                    </el-tag>
+                  </el-descriptions-item>
+                  <el-descriptions-item label="阶段切换建议">
+                    {{ outputData.直播结构.阶段切换建议?.建议 || '无' }}
+                    <div v-if="outputData.直播结构.阶段切换建议?.原因" style="margin-top: 5px; font-size: 14px; color: #606266">
+                      原因: {{ outputData.直播结构.阶段切换建议?.原因 }}
+                    </div>
+                  </el-descriptions-item>
+                </el-descriptions>
+              </el-card>
+            </div>
 
             <el-descriptions :column="1" border>
               <el-descriptions-item label="建议话术">
@@ -161,6 +231,8 @@ const inputData = ref({
 const danmuText = ref('')
 const ingredientsText = ref('')
 const effectsText = ref('')
+const testScenario = ref('default')
+const fileList = ref([])
 
 // 输出数据
 const outputData = ref({})
@@ -172,6 +244,18 @@ const outputTagType = computed(() => {
   if (priority === '中') return 'warning'
   return 'info'
 })
+
+// 文件上传成功处理
+const handleUploadSuccess = (response, file, fileList) => {
+  ElMessage.success('文件上传成功并添加到知识库')
+  console.log('上传成功:', response)
+}
+
+// 文件上传失败处理
+const handleUploadError = (error, file, fileList) => {
+  ElMessage.error('文件上传失败')
+  console.error('上传失败:', error)
+}
 
 // 解析弹幕文本
 const parseDanmu = () => {
@@ -227,10 +311,65 @@ const submitDecision = async () => {
 
 // 模拟数据
 const simulateInput = () => {
-  danmuText.value = '油皮能用吗？\n有没有小样？\n价格太贵了\n油皮能用吗？\n和XX大牌比怎么样？\n油皮能用吗？'
-  ingredientsText.value = '水杨酸,烟酰胺,透明质酸'
-  effectsText.value = '控油,修护,保湿'
-  ElMessage.success('已填充模拟数据')
+  switch (testScenario.value) {
+    case 'default':
+      inputData.value.直播状态.当前阶段 = '产品讲解期'
+      inputData.value.商品数据 = {
+        sku_id: '12345',
+        产品名称: '控油修护精华液',
+        规格: '30ml',
+        价格: 350,
+        成分: [],
+        功效: []
+      }
+      danmuText.value = '油皮能用吗？\n有没有小样？\n价格太贵了\n油皮能用吗？\n和XX大牌比怎么样？\n油皮能用吗？'
+      ingredientsText.value = '水杨酸,烟酰胺,透明质酸'
+      effectsText.value = '控油,修护,保湿'
+      break
+    case 'product_intro':
+      inputData.value.直播状态.当前阶段 = '产品讲解期'
+      inputData.value.商品数据 = {
+        sku_id: '12346',
+        产品名称: '焕白精华液',
+        规格: '50ml',
+        价格: 480,
+        成分: [],
+        功效: []
+      }
+      danmuText.value = '这个产品有什么功效？\n适合什么肤质？\n成分安全吗？\n这个产品有什么功效？\n怎么使用？\n这个产品有什么功效？'
+      ingredientsText.value = '水杨酸,烟酰胺,透明质酸,维生素C'
+      effectsText.value = '控油,修护,保湿,美白'
+      break
+    case 'promotion':
+      inputData.value.直播状态.当前阶段 = '促单期'
+      inputData.value.商品数据 = {
+        sku_id: '12347',
+        产品名称: '抗皱紧致精华液',
+        规格: '30ml',
+        价格: 680,
+        成分: [],
+        功效: []
+      }
+      danmuText.value = '有优惠吗？\n怎么下单？\n什么时候发货？\n有优惠吗？\n有赠品吗？\n有优惠吗？'
+      ingredientsText.value = '视黄醇,胜肽,透明质酸'
+      effectsText.value = '抗皱,紧致,保湿'
+      break
+    case 'qna':
+      inputData.value.直播状态.当前阶段 = '问答互动期'
+      inputData.value.商品数据 = {
+        sku_id: '12348',
+        产品名称: '舒缓修护精华液',
+        规格: '30ml',
+        价格: 320,
+        成分: [],
+        功效: []
+      }
+      danmuText.value = '敏感肌能用吗？\n孕妇能用吗？\n能和其他产品一起用吗？\n敏感肌能用吗？\n效果怎么样？\n敏感肌能用吗？'
+      ingredientsText.value = '神经酰胺,积雪草,透明质酸'
+      effectsText.value = '舒缓,修护,保湿'
+      break
+  }
+  ElMessage.success('已填充测试数据')
 }
 </script>
 

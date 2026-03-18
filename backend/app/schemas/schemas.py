@@ -64,9 +64,20 @@ class PromptInstruction(BaseModel):
     合规检查: str = Field(..., description="合规检查结果")
 
 
+class LiveStructure(BaseModel):
+    """直播结构信息"""
+    当前阶段: str
+    阶段描述: str
+    下一阶段: Optional[str] = None
+    阶段提示: List[str] = Field(default_factory=list)
+    下一阶段准备: List[str] = Field(default_factory=list)
+    阶段切换建议: Optional[Dict[str, str]] = None
+
+
 class AgentOutput(BaseModel):
     """Agent 完整输出"""
     提词指令: PromptInstruction
+    直播结构: LiveStructure
 
 
 # ==================== 商品相关模型 ====================

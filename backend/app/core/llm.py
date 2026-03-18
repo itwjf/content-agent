@@ -27,6 +27,11 @@ def call_llm(prompt: str, system_prompt: str = None) -> str:
     Returns:
         LLM 生成的文本
     """
+    # 检查 API Key 是否设置
+    if not settings.llm_api_key or settings.llm_api_key == "your_api_key_here":
+        print("[LLM] API Key 未设置，使用基础话术")
+        raise Exception("API Key 未设置，请在 .env 文件中配置 LLM_API_KEY")
+    
     client = get_llm_client()
 
     messages = []
@@ -41,4 +46,5 @@ def call_llm(prompt: str, system_prompt: str = None) -> str:
         max_tokens=1000
     )
 
-    return response.choices[0].message.content
+    content = response.choices[0].message.content
+    return content if content else ""

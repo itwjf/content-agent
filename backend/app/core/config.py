@@ -17,8 +17,14 @@ class Settings(BaseSettings):
     # SiliconFlow Embedding API 配置
     siliconflow_api_key: Optional[str] = None
 
+    # MySQL 配置
+    mysql_root_password: str = "your_mysql_root_password_here"
+    mysql_database: str = "your_mysql_database_here"
+    mysql_user: str = "your_mysql_username_here"
+    mysql_password: str = "your_mysql_password_here"
+    
     # 数据库配置
-    database_url: str = "mysql+pymysql://content_agent:content123@localhost:3306/content_agent"
+    database_url: str = "mysql+pymysql://content_agent:content123@mysql:3306/content_agent"
 
     # Qdrant 配置
     qdrant_host: str = "localhost"

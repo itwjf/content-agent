@@ -153,6 +153,9 @@ class ComplianceModule:
 
     def _generate_suggestion(self, text: str, violations: List[Dict]) -> str:
         """生成修改后的文本"""
+        if not text:
+            return ""
+            
         result = text
 
         # 按位置从后往前替换（避免位置偏移）
