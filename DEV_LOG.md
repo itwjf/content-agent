@@ -78,9 +78,68 @@
 
 ---
 
-## Phase 5 - Docker 部署完善（待开发）
+## Phase 5 - Docker 部署完善（2026-03-18）
 
-> 内容待填充
+### 完成内容
+- ✅ 完善 docker-compose.yml 配置
+- ✅ 创建 Docker 环境变量文件（backend.env）
+- ✅ 创建 .gitignore 保护敏感文件
+- ✅ 完善部署说明文档
+- ✅ 修复 LLM 调用问题（匹配逻辑+始终调用）
+
+### Docker 部署命令
+```bash
+cd D:\Documents\project\content-agent\docker
+
+# 1. 编辑 backend.env，填入 API Key
+notepad backend.env
+
+# 2. 启动所有服务
+docker-compose up -d
+```
+
+### 服务地址
+| 服务 | 地址 |
+|------|------|
+| 前端 | http://localhost:3000 |
+| 后端 | http://localhost:8000 |
+| API 文档 | http://localhost:8000/docs |
+
+---
+
+## 项目完成总结
+
+| 阶段 | 内容 | 状态 |
+|------|------|------|
+| Phase 1 | 项目初始化 | ✅ |
+| Phase 2 | 后端基础框架 | ✅ |
+| Phase 3 | 核心AI模块 | ✅ |
+| Phase 4 | 商品管理模块 | ✅ |
+| Phase 5 | Docker 部署 | ✅ |
+
+---
+
+## 如何使用本项目
+
+### 方式一：本地开发
+```bash
+# 后端
+cd backend && pip install -r requirements.txt
+python -m uvicorn app.main:app --reload
+
+# 前端
+cd frontend && npm install
+npm run dev
+```
+
+### 方式二：Docker 部署
+```bash
+cd docker
+notepad backend.env  # 填入 API Key
+docker-compose up -d
+```
+
+---
 
 ---
 
