@@ -1,29 +1,22 @@
 # ContentAgent Backend Dependencies
 
 # FastAPI & Server
-fastapi==0.115.0
-uvicorn[standard]==0.32.0
-python-multipart==0.0.12
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
 
-# Database
-sqlalchemy==2.0.36
-pymysql==1.1.1
-alembic==1.14.0
+# Database (可选，目前未使用)
+# sqlalchemy>=2.0.0
+# pymysql>=1.1.0
 
-# Vector Database
-qdrant-client==1.12.0
+# Vector Database (可选，目前未使用)
+# qdrant-client>=1.12.0
 
 # LLM & AI
-openai==1.57.4
-httpx==0.28.1
+openai>=1.57.0
+httpx>=0.28.0
 
 # Utils
-python-dotenv==1.0.1
-pydantic==2.10.3
-pydantic-settings==2.6.1
-pydantic[email]==2.10.3
-loguru==0.7.3
-numpy==1.26.4
-
-# Validation
-email-validator==2.2.0
+python-dotenv>=1.0.0
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+loguru>=0.7.0
