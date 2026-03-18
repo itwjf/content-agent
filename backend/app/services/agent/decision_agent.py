@@ -7,6 +7,7 @@ from app.services.modules.interaction_module import analyze_danmu
 from app.services.modules.selling_point_module import generate_selling_points
 from app.services.modules.compliance_module import check_compliance
 from app.services.modules.structure_engine import get_current_stage, get_stage_transition_advice
+from app.services.rag_service import rag_service
 
 
 class DecisionAgent:
@@ -54,7 +55,23 @@ class DecisionAgent:
         # 2.2 卖点拆解模块
         # 提取高频问题
         user_questions = danmu_result.get("高频问题", [])
-        selling_result = generate_selling_points(product_data, user_questions)
+
+        # 2.3 搜索RAG知识库
+        rag_context = ""
+        if user_questions:
+            # 把高频问题转为查询
+            query_text = " ".join([q.get("关键词", "") for q in user_questions[:3]])
+            rag_results = rag_service.search(
+                collection_name="products",
+                query=query_text,
+                top_k=2
+            )
+            if rag_results:
+                rag_context = "\n".join([r["text"] for r in rag_results])
+                print(f"[RAG] 搜索到 {len(rag_results)} 条相关知识")
+
+        # 2.4 卖点拆解模块
+        selling_result = generate_selling_points(product_data, user_questions, rag_context)
 
         # 2.3 内容结构引擎
         current_stage_info = get_current_stage(

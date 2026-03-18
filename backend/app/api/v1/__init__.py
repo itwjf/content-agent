@@ -104,3 +104,7 @@ async def compliance_word_count():
 # 注册商品管理路由
 from app.api.products import router as products_router
 router.include_router(products_router, tags=["商品管理"])
+
+# 注册 RAG 知识库路由
+from app.api.rag import router as rag_router
+router.include_router(rag_router, tags=["RAG知识库"])

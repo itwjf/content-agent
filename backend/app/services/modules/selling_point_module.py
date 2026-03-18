@@ -41,7 +41,8 @@ class SellingPointModule:
     def generate_selling_points(
         self,
         product_data: Dict,
-        user_questions: List[Dict] = None
+        user_questions: List[Dict] = None,
+        rag_context: str = ""
     ) -> Dict:
         """
         生成卖点话术
@@ -49,6 +50,7 @@ class SellingPointModule:
         Args:
             product_data: 商品数据
             user_questions: 用户问题列表（可选）
+            rag_context: RAG知识库检索结果（可选）
 
         Returns:
             卖点结果
@@ -66,7 +68,7 @@ class SellingPointModule:
             )
 
         # 3. 生成话术
-        script = self._generate_script(product_data, matched_points)
+        script = self._generate_script(product_data, matched_points, rag_context)
 
         return {
             "商品卖点": product_selling_points,
@@ -195,7 +197,8 @@ class SellingPointModule:
     def _generate_script(
         self,
         product_data: Dict,
-        matched_points: List[Dict] = None
+        matched_points: List[Dict] = None,
+        rag_context: str = ""
     ) -> str:
         """生成完整话术（优先调用 LLM，失败时降级为基础话术）"""
         product_name = product_data.get("产品名称", "这款产品")
@@ -211,7 +214,7 @@ class SellingPointModule:
 
         # 无论是否有匹配卖点，都尝试调用 LLM 生成话术
         try:
-            prompt = self._build_llm_prompt(product_data, matched_points or [])
+            prompt = self._build_llm_prompt(product_data, matched_points or [], rag_context)
             print(f"[LLM] 开始调用，prompt 长度: {len(prompt)}")
             llm_script = call_llm(
                 prompt=prompt,
@@ -225,7 +228,7 @@ class SellingPointModule:
 
         return base_script
 
-    def _build_llm_prompt(self, product_data: Dict, matched_points: List[Dict]) -> str:
+    def _build_llm_prompt(self, product_data: Dict, matched_points: List[Dict], rag_context: str = "") -> str:
         """构建 LLM 生成话术的 prompt"""
         product_name = product_data.get("产品名称", "")
         price = product_data.get("价格", 0)
@@ -235,6 +238,9 @@ class SellingPointModule:
         # 提取问题
         questions = [p["问题"] for p in matched_points[:3]]
         questions_str = "、".join(questions) if questions else "无"
+
+        # 添加RAG知识库内容
+        rag_section = f"\n\n参考知识库内容：\n{rag_context}" if rag_context else ""
 
         prompt = f"""
 请为主播生成一段直播话术。
@@ -246,6 +252,7 @@ class SellingPointModule:
 - 成分：{", ".join(ingredients)}
 
 用户高频问题：{questions_str}
+{rag_section}
 
 要求：
 1. 话术要自然亲切，像正常主播说话
