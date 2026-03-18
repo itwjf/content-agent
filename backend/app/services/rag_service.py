@@ -112,16 +112,16 @@ class RAGService:
             向量列表（浮点数列表）
         """
         try:
-            # 方法1: 使用 DeepSeek Embedding API
-            # 注意：需要 DeepSeek API 支持 embedding 模型
+            # 使用硅基流动 (SiliconFlow) 的 Embedding API
+            # 模型: BAAI/bge-large-zh-v1.5 (免费/便宜效果好)
             response = requests.post(
-                "https://api.deepseek.com/embeddings",
+                "https://api.siliconflow.cn/v1/embeddings",
                 headers={
-                    "Authorization": f"Bearer {settings.llm_api_key}",
+                    "Authorization": f"Bearer sk-tfsxcuglwfasefibuqvpdoprqrvfzzfodyeajxwkezqzxzmi",
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "deepseek-embeddings",
+                    "model": "BAAI/bge-large-zh-v1.5",
                     "input": text
                 },
                 timeout=30
@@ -129,11 +129,12 @@ class RAGService:
 
             if response.status_code == 200:
                 result = response.json()
-                # DeepSeek 返回格式: {"data": [{"embedding": [...]}]}
+                # 硅基流动返回格式: {"data": [{"embedding": [...]}]}
                 embedding = result["data"][0]["embedding"]
+                print(f"[RAG] 硅基流动 embedding 成功，向量维度: {len(embedding)}")
                 return embedding
             else:
-                print(f"[RAG] DeepSeek embedding 失败: {response.status_code}, 使用备用方案")
+                print(f"[RAG] 硅基流动 embedding 失败: {response.status_code}, 使用备用方案")
                 return self._fallback_embedding(text)
 
         except Exception as e:
