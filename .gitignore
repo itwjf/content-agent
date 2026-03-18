@@ -1,0 +1,34 @@
+# ContentAgent 根目录 .gitignore
+
+# 环境配置（包含敏感信息）
+.env
+.env.local
+*.env
+!backend/.env.example
+!docker/.env.docker
+
+# 日志
+logs/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 前端
+frontend/node_modules/
+frontend/dist/
+
+# 后端
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/.venv/
+backend/venv/

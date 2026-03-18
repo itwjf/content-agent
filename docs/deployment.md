@@ -6,16 +6,16 @@
 
 ## 1. 环境变量配置
 
-### 1.1 后端配置
+### 1.1 本地开发配置
 
 在 `backend/` 目录下创建 `.env` 文件（从模板复制）：
 
 ```bash
 # 复制模板
-copy .env.example .env
+copy backend\.env.example backend\.env
 ```
 
-然后编辑 `.env` 文件，修改以下配置：
+然后编辑 `backend/.env` 文件，修改以下配置：
 
 | 配置项 | 说明 | 示例值 |
 |--------|------|--------|
@@ -25,30 +25,22 @@ copy .env.example .env
 | `DEBUG` | 调试模式 | `true` 或 `false` |
 | `LOG_LEVEL` | 日志级别 | `INFO` |
 
-**注意：** `.env 文件包含敏感信息，已加入 .gitignore，不会提交到 GitHub**
+### 1.2 Docker 部署配置
 
----
+在 `docker/` 目录下编辑 `backend.env` 文件：
 
-### 1.2 Docker Compose 配置
-
-在 `docker/docker-compose.yml` 中修改：
-
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `MYSQL_ROOT_PASSWORD` | MySQL root 密码 | `root123456` |
-| `MYSQL_DATABASE` | 数据库名 | `content_agent` |
-| `MYSQL_USER` | 数据库用户 | `content_agent` |
-| `MYSQL_PASSWORD` | 数据库密码 | `content123` |
-| 环境变量 `LLM_API_KEY` | LLM API Key | `${LLM_API_KEY}` |
-
-**重要：** 生产环境请修改默认密码！
-
-修改方式：
 ```bash
-# 方式1：直接修改 docker-compose.yml 中的值
-# 方式2：在启动前设置环境变量
-$env:LLM_API_KEY="your_key_here"
-docker-compose up -d
+# 编辑 Docker 后端配置
+notepad docker\backend.env
+```
+
+填入你的 API Key：
+```
+LLM_API_KEY=your_actual_api_key_here
+LLM_BASE_URL=https://api.deepseek.com
+LLM_MODEL=deepseek-chat
+DEBUG=false
+LOG_LEVEL=INFO
 ```
 
 ---
@@ -79,28 +71,32 @@ cd frontend
 npm run dev
 ```
 
-访问：
-- 前端：http://localhost:5173
-- 后端：http://localhost:8000
-- API 文档：http://localhost:8000/docs
+### 2.3 访问地址
+
+| 服务 | 地址 | 说明 |
+|------|------|------|
+| 前端 | http://localhost:5173 | Vue 开发服务器 |
+| 后端 | http://localhost:8000 | FastAPI 服务 |
+| API 文档 | http://localhost:8000/docs | Swagger 文档 |
 
 ---
 
 ## 3. Docker 部署
 
-### 3.1 构建并启动
+### 3.1 快速启动
 
 ```bash
-cd docker
+# 1. 进入 Docker 配置目录
+cd D:\Documents\project\content-agent\docker
 
-# 启动所有服务
+# 2. 编辑 backend.env，填入你的 API Key
+notepad backend.env
+
+# 3. 启动所有服务（首次启动会构建镜像，需要几分钟）
 docker-compose up -d
 
-# 查看日志
-docker-compose logs -f
-
-# 停止服务
-docker-compose down
+# 4. 查看服务状态
+docker-compose ps
 ```
 
 ### 3.2 服务地址
@@ -110,53 +106,94 @@ docker-compose down
 | 前端 | http://localhost:3000 | Nginx 静态服务 |
 | 后端 | http://localhost:8000 | FastAPI 服务 |
 | API 文档 | http://localhost:8000/docs | Swagger 文档 |
-| MySQL | localhost:3306 | 数据库 |
-| Qdrant | localhost:6333 | 向量数据库 |
+| MySQL | localhost:3306 | 数据库（可选） |
+| Qdrant | localhost:6333 | 向量数据库（可选） |
 
 ### 3.3 常用命令
 
 ```bash
+# 启动服务
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 停止服务
+docker-compose down
+
 # 重启某个服务
 docker-compose restart backend
 
 # 查看容器状态
 docker ps
 
-# 进入容器内部
+# 进入容器内部（调试用）
 docker exec -it content-agent-backend /bin/bash
 
-# 查看日志
-docker-compose logs -f backend
+# 重新构建镜像
+docker-compose build --no-cache
 ```
 
 ---
 
-## 4. 配置清单汇总
+## 4. 配置文件说明
 
-| 文件 | 需要修改的配置 | 敏感信息 |
-|------|---------------|---------|
-| `backend/.env` | LLM_API_KEY | ✅ 是 |
-| `docker/docker-compose.yml` | MySQL密码、各服务端口 | ✅ 是 |
-| `.env.example` | 无需修改（模板） | ❌ 否 |
+| 文件 | 用途 | 是否提交到 GitHub |
+|------|------|------------------|
+| `backend/.env` | 本地运行配置 | ❌ 否（已加入 .gitignore） |
+| `backend/.env.example` | 本地配置模板 | ✅ 是 |
+| `docker/backend.env` | Docker 后端配置 | ❌ 否 |
+| `docker/docker-compose.yml` | Docker 编排配置 | ✅ 是 |
+| `.env.docker` | Docker 环境变量模板 | ✅ 是 |
 
 ---
 
-## 5. 常见问题
+## 5. 自定义配置
+
+### 5.1 修改端口
+
+编辑 `docker/docker-compose.yml` 或设置环境变量：
+
+```bash
+# 修改前端端口为 8080
+set FRONTEND_PORT=8080
+docker-compose up -d
+
+# 或直接修改 docker-compose.yml 中的端口映射
+```
+
+### 5.2 修改 MySQL 密码
+
+```bash
+# 方式1：环境变量
+set MYSQL_PASSWORD=your_new_password
+docker-compose up -d
+
+# 方式2：直接编辑 docker-compose.yml
+```
+
+---
+
+## 6. 常见问题
 
 **Q: 启动后提示数据库连接失败？**
 A: 确保 MySQL 容器已启动：`docker ps` 查看容器状态
 
 **Q: LLM 调用失败？**
-A: 检查 `.env` 中的 `LLM_API_KEY` 是否正确
+A: 检查 `docker/backend.env` 中的 `LLM_API_KEY` 是否正确
 
 **Q: 前端无法访问后端 API？**
-A: 检查 docker-compose.yml 中前端是否正确代理到后端服务
+A: 检查 nginx.conf 中是否正确代理到后端服务
+
+**Q: 容器启动失败？**
+A: 查看日志排查：`docker-compose logs backend`
 
 ---
 
-## 6. 安全建议
+## 7. 安全建议
 
 1. **不要** 将包含真实密码的文件提交到 GitHub
 2. 生产环境使用**强密码**
 3. 定期轮换 API Key
-4. 使用 Docker Secrets 或环境变量管理敏感信息
+4. 使用 Docker Secrets 管理敏感信息
+5. 生产环境建议配置 HTTPS

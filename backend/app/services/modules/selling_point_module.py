@@ -127,13 +127,24 @@ class SellingPointModule:
             # 匹配卖点
             for point in selling_points:
                 point_keywords = point.get("利益点", []) + [point.get("关键词", "")]
+                point_keywords_str = "".join([str(kw) for kw in point_keywords])
                 point_type = point.get("类型", "")
 
                 # 检查问题是否与卖点相关
-                is_match = any(
-                    kw in question_text or question_text in kw
-                    for kw in point_keywords
-                )
+                # 1. 完全包含匹配
+                # 2. 关键词重叠匹配（如"油皮"匹配"控油"中的"油"字）
+                is_match = False
+                for kw in point_keywords:
+                    kw = str(kw)
+                    # 双向包含检查
+                    if kw in question_text or question_text in kw:
+                        is_match = True
+                        break
+                    # 关键词重叠检查（至少有一个中文字符相同）
+                    common_chars = set(kw) & set(question_text)
+                    if len(common_chars) >= 1 and len(kw) <= 6:
+                        is_match = True
+                        break
 
                 if is_match:
                     matched.append({
@@ -186,34 +197,31 @@ class SellingPointModule:
         product_data: Dict,
         matched_points: List[Dict] = None
     ) -> str:
-        """生成完整话术（可调用 LLM 增强）"""
+        """生成完整话术（优先调用 LLM，失败时降级为基础话术）"""
         product_name = product_data.get("产品名称", "这款产品")
         effects = product_data.get("功效", [])
         price = product_data.get("价格", 0)
 
-        # 基础话术
+        # 基础话术（兜底）
         base_script = f"欢迎来到直播间！今天给大家介绍{product_name}，"
-
         if effects:
             effect_str = "、".join(effects[:3])
             base_script += f"具有{effect_str}等多重功效，"
-
         base_script += f"价格只需要{price}元，性价比非常高！"
 
-        # 如果有匹配的卖点，用 LLM 生成更贴合的话术
-        if matched_points:
-            try:
-                # 构建 LLM prompt
-                prompt = self._build_llm_prompt(product_data, matched_points)
-                llm_script = call_llm(
-                    prompt=prompt,
-                    system_prompt="你是一个专业的主播，擅长根据用户问题生成针对性的产品话术。话术要自然、亲切、有说服力。"
-                )
-                return llm_script
-            except Exception as e:
-                # LLM 调用失败时返回基础话术
-                print(f"LLM 调用失败: {e}")
-                return base_script
+        # 无论是否有匹配卖点，都尝试调用 LLM 生成话术
+        try:
+            prompt = self._build_llm_prompt(product_data, matched_points or [])
+            print(f"[LLM] 开始调用，prompt 长度: {len(prompt)}")
+            llm_script = call_llm(
+                prompt=prompt,
+                system_prompt="你是一个专业的直播主播，擅长根据用户问题生成针对性的产品话术。话术要自然、亲切、有说服力，50-100字。"
+            )
+            print(f"[LLM] 调用成功，返回长度: {len(llm_script)}")
+            return llm_script
+        except Exception as e:
+            print(f"[LLM] 调用失败，降级为基础话术: {e}")
+            return base_script
 
         return base_script
 

@@ -8,12 +8,12 @@ services:
     container_name: content-agent-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root123456
-      MYSQL_DATABASE: content_agent
-      MYSQL_USER: content_agent
-      MYSQL_PASSWORD: content123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-content_agent}
+      MYSQL_USER: ${MYSQL_USER:-content_agent}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-content123}
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -30,7 +30,7 @@ services:
     container_name: content-agent-qdrant
     restart: unless-stopped
     ports:
-      - "6333:6333"
+      - "${QDRANT_PORT:-6333}:6333"
       - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
@@ -50,13 +50,15 @@ services:
     container_name: content-agent-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
+    env_file:
+      - ./backend.env
     environment:
-      - DATABASE_URL=mysql+pymysql://content_agent:content123@mysql:3306/content_agent
-      - QDRANT_HOST=qdrant
-      - QDRANT_PORT=6333
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_BASE_URL=${LLM_BASE_URL:-https://api.deepseek.com}
+      - LLM_MODEL=${LLM_MODEL:-deepseek-chat}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       mysql:
         condition: service_healthy
@@ -64,8 +66,6 @@ services:
         condition: service_healthy
     networks:
       - content-agent-net
-    volumes:
-      - ./logs:/app/logs
 
   # Vue 前端服务
   frontend:
@@ -75,7 +75,7 @@ services:
     container_name: content-agent-frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "${FRONTEND_PORT:-3000}:80"
     depends_on:
       - backend
     networks:
