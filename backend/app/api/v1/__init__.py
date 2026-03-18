@@ -5,6 +5,14 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.core.llm import call_llm
+from app.services.agent.decision_agent import agent_decide
+from app.services.modules.compliance_module import check_compliance, get_word_count
+from app.schemas.schemas import (
+    AgentInput,
+    AgentOutput,
+    ComplianceCheckRequest,
+    ComplianceCheckResponse
+)
 
 router = APIRouter()
 
@@ -55,3 +63,39 @@ async def test_llm(request: LLMTestRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"LLM 调用失败: {str(e)}")
+
+
+@router.post("/agent/decide", response_model=AgentOutput)
+async def decide(input_data: AgentInput):
+    """
+    Agent 核心决策接口
+
+    接收多模态输入，返回提词建议
+    """
+    try:
+        # 转换为字典
+        data_dict = input_data.model_dump()
+        result = agent_decide(data_dict)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Agent 决策失败: {str(e)}")
+
+
+@router.post("/compliance/check", response_model=ComplianceCheckResponse)
+async def compliance_check(request: ComplianceCheckRequest):
+    """合规检查接口"""
+    try:
+        result = check_compliance(request.text)
+        return ComplianceCheckResponse(
+            passed=result["passed"],
+            violations=[v["word"] for v in result["violations"]],
+            suggestion=result["suggestion"]
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"合规检查失败: {str(e)}")
+
+
+@router.get("/compliance/word-count")
+async def compliance_word_count():
+    """获取违禁词数量"""
+    return {"word_count": get_word_count()}
