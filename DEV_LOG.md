@@ -116,6 +116,7 @@ docker-compose up -d
 | Phase 3 | 核心AI模块 | ✅ |
 | Phase 4 | 商品管理模块 | ✅ |
 | Phase 5 | Docker 部署 | ✅ |
+| Phase 6 | RAG 知识库 | ✅ |
 
 ---
 
