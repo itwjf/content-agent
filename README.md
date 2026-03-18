@@ -65,6 +65,16 @@ content-agent/
 
 详见 [部署说明](docs/deployment.md)
 
+## 配置清单
+
+| 文件 | 用途 |
+|------|------|
+| `backend/.env` | 本地运行配置（包含 API Key）|
+| `backend/.env.example` | 配置模板（GitHub 安全版）|
+| `docker/docker-compose.yml` | Docker 部署配置 |
+
+**注意：** `.env` 文件包含敏感信息，已加入 `.gitignore`，不会提交到 GitHub。
+
 ```bash
 # 1. 克隆项目
 git clone git@github.com:itwjf/content-agent.git
