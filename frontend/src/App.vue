@@ -4,6 +4,15 @@
       <el-header>
         <div class="header-content">
           <h1>🎯 ContentAgent 智能直播辅助系统</h1>
+          <el-menu
+            mode="horizontal"
+            :default-active="activeMenu"
+            router
+            class="header-menu"
+          >
+            <el-menu-item index="/">提词Demo</el-menu-item>
+            <el-menu-item index="/products">商品管理</el-menu-item>
+          </el-menu>
           <el-tag type="success">Agent Demo</el-tag>
         </div>
       </el-header>
@@ -15,6 +24,11 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const activeMenu = computed(() => route.path)
 </script>
 
 <style>
@@ -49,6 +63,12 @@
 .header-content h1 {
   font-size: 20px;
   color: #303133;
+}
+
+.header-menu {
+  flex: 1;
+  margin: 0 20px;
+  border: none;
 }
 
 .el-main {

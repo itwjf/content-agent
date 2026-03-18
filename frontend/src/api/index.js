@@ -25,7 +25,7 @@ apiClient.interceptors.response.use(
   },
   error => {
     console.error('API Error:', error)
-    return Promise.reject(error)
+    return Promise.reject(error.response?.data || error)
   }
 )
 
@@ -47,5 +47,7 @@ export const complianceCheck = (text) => apiClient.post('/compliance/check', { t
 export const getProducts = () => apiClient.get('/products')
 export const getProduct = (skuId) => apiClient.get(`/products/${skuId}`)
 export const createProduct = (data) => apiClient.post('/products', data)
+export const updateProduct = (skuId, data) => apiClient.put(`/products/${skuId}`, data)
+export const deleteProduct = (skuId) => apiClient.delete(`/products/${skuId}`)
 
 export default apiClient
