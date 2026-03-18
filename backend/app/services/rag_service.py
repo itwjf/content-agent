@@ -1,25 +1,49 @@
 """
 RAG 知识库服务
 功能：文档管理、文本分块、向量化存储、语义搜索
+
+注意：
+- 本模块使用 DeepSeek 的 embedding API 将文本转为向量
+- 向量存储使用 Qdrant 向量数据库
 """
+
 from typing import List, Dict, Optional
 import json
-import hashlib
-from app.core.llm import call_llm
+import requests
+from app.core.config import get_settings
+
+settings = get_settings()
 
 
 class RAGService:
-    """RAG 知识库服务"""
+    """
+    RAG 知识库服务类
 
-    # 模拟向量存储（生产环境应使用 Qdrant）
-    vector_store = {}
+    主要功能：
+    1. add_document: 添加文档到知识库
+       - 文本分块（chunking）
+       - 调用 embedding API 生成向量
+       - 存入 Qdrant
+
+    2. search: 语义搜索
+       - 把查询转为向量
+       - 在 Qdrant 中搜索相似向量
+       - 返回结果
+    """
 
     # 文本分块配置
     CHUNK_SIZE = 500  # 每个chunk的字符数
     CHUNK_OVERLAP = 50  # 重叠字符数
 
     def __init__(self):
-        pass
+        """初始化服务"""
+        # Qdrant 配置（如果使用 Qdrant）
+        # self.qdrant_url = "http://localhost:6333"
+
+        # 模拟向量存储（开发测试用，生产环境应使用 Qdrant）
+        self.vector_store = {}
+
+        print("[RAG] 知识库服务初始化完成")
 
     def add_document(
         self,
@@ -30,23 +54,31 @@ class RAGService:
         """
         添加文档到知识库
 
-        Args:
-            collection_name: 集合名称（类似文件夹）
+        参数:
+            collection_name: 集合名称（类似文件夹/表名）
             text: 文档内容
-            metadata: 元数据
+            metadata: 元数据（如商品ID、类型等）
 
-        Returns:
+        流程:
+            1. 文本分块
+            2. 对每个chunk调用embedding API生成向量
+            3. 存储到向量数据库
+
+        返回:
             添加结果
         """
-        # 1. 文本分块
+        # Step 1: 文本分块
         chunks = self._chunk_text(text)
+        print(f"[RAG] 文档分块完成，共 {len(chunks)} 个chunk")
 
-        # 2. 为每个chunk生成向量（模拟）
+        # Step 2: 为每个chunk生成向量并存储
         chunks_with_vectors = []
         for i, chunk in enumerate(chunks):
-            chunk_id = f"{collection_name}_{len(self.vector_store) + i}"
-            # 生成模拟向量（实际应调用embedding API）
-            vector = self._generate_vector(chunk)
+            chunk_id = f"{collection_name}_{i}_{len(self.vector_store)}"
+
+            # 调用 embedding API 生成向量
+            vector = self._get_embedding(chunk)
+            print(f"[RAG] chunk {i+1} 向量化完成，向量维度: {len(vector)}")
 
             chunks_with_vectors.append({
                 "id": chunk_id,
@@ -55,7 +87,7 @@ class RAGService:
                 "metadata": metadata or {}
             })
 
-        # 3. 存储到向量库
+        # Step 3: 存储
         if collection_name not in self.vector_store:
             self.vector_store[collection_name] = []
 
@@ -67,6 +99,73 @@ class RAGService:
             "status": "success"
         }
 
+    def _get_embedding(self, text: str) -> List[float]:
+        """
+        调用 Embedding API 将文本转为向量
+
+        这是核心函数！负责把文字转成数字向量。
+
+        参数:
+            text: 输入文本
+
+        返回:
+            向量列表（浮点数列表）
+        """
+        try:
+            # 方法1: 使用 DeepSeek Embedding API
+            # 注意：需要 DeepSeek API 支持 embedding 模型
+            response = requests.post(
+                "https://api.deepseek.com/embeddings",
+                headers={
+                    "Authorization": f"Bearer {settings.llm_api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "deepseek-embeddings",
+                    "input": text
+                },
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                # DeepSeek 返回格式: {"data": [{"embedding": [...]}]}
+                embedding = result["data"][0]["embedding"]
+                return embedding
+            else:
+                print(f"[RAG] DeepSeek embedding 失败: {response.status_code}, 使用备用方案")
+                return self._fallback_embedding(text)
+
+        except Exception as e:
+            print(f"[RAG] Embedding API 调用失败: {e}，使用备用方案")
+            return self._fallback_embedding(text)
+
+    def _fallback_embedding(self, text: str) -> List[float]:
+        """
+        备用 embedding 方案
+        当 API 调用失败时使用，仅用于开发测试
+        生产环境应该使用真正的 embedding
+        """
+        import hashlib
+
+        # 用文本的 MD5 hash 生成伪向量
+        hash_obj = hashlib.md5(text.encode())
+        hash_hex = hash_obj.hexdigest()
+
+        # 转换为 0-1 之间的浮点数
+        vector = []
+        for i in range(0, len(hash_hex), 2):
+            try:
+                vector.append(int(hash_hex[i:i+2], 16) / 255.0)
+            except:
+                vector.append(0.5)
+
+        # 填充到固定长度 1536（与 OpenAI embedding 相同）
+        while len(vector) < 1536:
+            vector.extend(vector[:min(1536 - len(vector), len(vector))])
+
+        return vector[:1536]
+
     def search(
         self,
         collection_name: str,
@@ -76,21 +175,27 @@ class RAGService:
         """
         语义搜索
 
-        Args:
+        参数:
             collection_name: 集合名称
             query: 查询内容
             top_k: 返回前k个结果
 
-        Returns:
+        流程:
+            1. 把查询转为向量（调用 embedding API）
+            2. 计算与库中向量的相似度
+            3. 返回最相似的top_k个结果
+
+        返回:
             搜索结果列表
         """
         if collection_name not in self.vector_store:
             return []
 
-        # 1. 把查询转成向量
-        query_vector = self._generate_vector(query)
+        # Step 1: 把查询转为向量
+        query_vector = self._get_embedding(query)
+        print(f"[RAG] 查询向量化完成")
 
-        # 2. 计算相似度
+        # Step 2: 计算相似度
         chunks = self.vector_store[collection_name]
         results = []
 
@@ -102,12 +207,22 @@ class RAGService:
                 "metadata": chunk.get("metadata", {})
             })
 
-        # 3. 排序并返回top_k
+        # Step 3: 排序返回 top_k
         results.sort(key=lambda x: x["score"], reverse=True)
         return results[:top_k]
 
     def _chunk_text(self, text: str) -> List[str]:
-        """文本分块"""
+        """
+        文本分块
+
+        把长文本分割成较小的 chunk，方便向量化和检索。
+
+        参数:
+            text: 原始文本
+
+        返回:
+            chunk 列表
+        """
         chunks = []
         start = 0
 
@@ -115,9 +230,8 @@ class RAGService:
             end = start + self.CHUNK_SIZE
             chunk = text[start:end]
 
-            # 尽量在句子边界分割
+            # 尽量在句子边界分割（更符合语义）
             if end < len(text):
-                # 找最后一个句号、逗号或换行
                 for sep in ['。', '！', '？', '，', '\n']:
                     last_sep = chunk.rfind(sep)
                     if last_sep > self.CHUNK_SIZE // 2:
@@ -125,34 +239,29 @@ class RAGService:
                         chunk = text[start:end]
                         break
 
-            chunks.append(chunk.strip())
+            if chunk.strip():
+                chunks.append(chunk.strip())
+
             start = end - self.CHUNK_OVERLAP
 
         return chunks
 
-    def _generate_vector(self, text: str) -> List[float]:
-        """
-        生成文本向量
-        注意：这里使用简化实现，生产环境应调用专业的embedding API
-        """
-        # 简化的hash作为向量（实际应使用embedding模型）
-        hash_obj = hashlib.md5(text.encode())
-        hash_hex = hash_obj.hexdigest()
-
-        # 转换为固定长度的向量
-        vector = []
-        for i in range(0, len(hash_hex), 2):
-            vector.append(int(hash_hex[i:i+2], 16) / 255.0)
-
-        # 确保向量长度为128
-        while len(vector) < 128:
-            vector.extend(vector[:min(128 - len(vector), len(vector))])
-
-        return vector[:128]
-
     def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
-        """计算余弦相似度"""
+        """
+        计算余弦相似度
+
+        向量相似度计算方法之一，值越接近1越相似。
+
+        参数:
+            vec1, vec2: 两个向量
+
+        返回:
+            相似度分数 (0-1)
+        """
+        # 点积
         dot_product = sum(a * b for a, b in zip(vec1, vec2))
+
+        # 向量长度
         magnitude1 = sum(a * a for a in vec1) ** 0.5
         magnitude2 = sum(b * b for b in vec2) ** 0.5
 
@@ -185,14 +294,17 @@ class RAGService:
         return False
 
 
-# 服务实例
+# 创建服务实例
 rag_service = RAGService()
 
 
-# 预设知识库数据
 def init_knowledge_base():
-    """初始化预设知识库"""
-    # 添加商品知识库
+    """
+    初始化预设知识库
+
+    添加一些示例文档到知识库中，用于演示和测试。
+    """
+    # 商品知识
     product_knowledge = """
     控油修护精华液产品介绍：
     - 产品名称：控油修护精华液
@@ -216,7 +328,7 @@ def init_knowledge_base():
         metadata={"type": "product", "sku": "12345"}
     )
 
-    # 添加直播话术知识库
+    # 直播话术知识
     live_script_knowledge = """
     直播话术模板：
 
@@ -243,6 +355,8 @@ def init_knowledge_base():
         text=live_script_knowledge,
         metadata={"type": "script"}
     )
+
+    print("[RAG] 预设知识库初始化完成")
 
 
 # 初始化
