@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.deepseek.com"
     llm_model: str = "deepseek-chat"
 
+    # SiliconFlow Embedding API 配置
+    siliconflow_api_key: Optional[str] = None
+
     # 数据库配置
     database_url: str = "mysql+pymysql://content_agent:content123@localhost:3306/content_agent"
 

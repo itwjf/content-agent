@@ -3,7 +3,7 @@ RAG 知识库服务
 功能：文档管理、文本分块、向量化存储、语义搜索
 
 注意：
-- 本模块使用 DeepSeek 的 embedding API 将文本转为向量
+- 本模块使用 SiliconFlow 的 embedding API 将文本转为向量
 - 向量存储使用 Qdrant 向量数据库
 """
 
@@ -37,9 +37,6 @@ class RAGService:
 
     def __init__(self):
         """初始化服务"""
-        # Qdrant 配置（如果使用 Qdrant）
-        # self.qdrant_url = "http://localhost:6333"
-
         # 模拟向量存储（开发测试用，生产环境应使用 Qdrant）
         self.vector_store = {}
 
@@ -112,12 +109,24 @@ class RAGService:
             向量列表（浮点数列表）
         """
         try:
-            # 使用硅基流动 (SiliconFlow) 的 Embedding API
-            # 模型: BAAI/bge-large-zh-v1.5 (免费/便宜效果好)
+            # ============================================================
+            # 使用 SiliconFlow (硅基流动) 的 Embedding API
+            # 模型: BAAI/bge-large-zh-v1.5
+            # 文档: https://docs.siliconflow.cn/
+            # ============================================================
+
+            # 从环境变量读取 API Key
+            api_key = getattr(settings, 'siliconflow_api_key', None)
+
+            # 如果环境变量没有设置，提示用户
+            if not api_key:
+                print("[RAG] 警告: 未设置 SILICONFLOW_API_KEY，使用备用方案")
+                return self._fallback_embedding(text)
+
             response = requests.post(
                 "https://api.siliconflow.cn/v1/embeddings",
                 headers={
-                    "Authorization": f"Bearer sk-tfsxcuglwfasefibuqvpdoprqrvfzzfodyeajxwkezqzxzmi",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json"
                 },
                 json={
@@ -131,10 +140,10 @@ class RAGService:
                 result = response.json()
                 # 硅基流动返回格式: {"data": [{"embedding": [...]}]}
                 embedding = result["data"][0]["embedding"]
-                print(f"[RAG] 硅基流动 embedding 成功，向量维度: {len(embedding)}")
+                print(f"[RAG] SiliconFlow embedding 成功，向量维度: {len(embedding)}")
                 return embedding
             else:
-                print(f"[RAG] 硅基流动 embedding 失败: {response.status_code}, 使用备用方案")
+                print(f"[RAG] SiliconFlow embedding 失败: {response.status_code}, 使用备用方案")
                 return self._fallback_embedding(text)
 
         except Exception as e:
