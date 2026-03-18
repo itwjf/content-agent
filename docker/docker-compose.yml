@@ -1,0 +1,90 @@
+# ContentAgent Docker Compose
+# 用于本地开发和生产部署
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: content-agent-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123456
+      MYSQL_DATABASE: content_agent
+      MYSQL_USER: content_agent
+      MYSQL_PASSWORD: content123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - content-agent-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Qdrant 向量数据库
+  qdrant:
+    image: qdrant/qdrant
+    container_name: content-agent-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - content-agent-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI 后端服务
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: content-agent-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mysql+pymysql://content_agent:content123@mysql:3306/content_agent
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://api.deepseek.com}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    networks:
+      - content-agent-net
+    volumes:
+      - ./logs:/app/logs
+
+  # Vue 前端服务
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: content-agent-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - content-agent-net
+
+volumes:
+  mysql_data:
+  qdrant_data:
+
+networks:
+  content-agent-net:
+    driver: bridge
