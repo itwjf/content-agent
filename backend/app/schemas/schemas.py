@@ -130,3 +130,90 @@ class ComplianceCheckResponse(BaseModel):
     passed: bool = Field(..., description="是否通过")
     violations: List[str] = Field(default_factory=list, description="违规词列表")
     suggestion: Optional[str] = Field(None, description="修改建议")
+
+
+# ==================== 直播场次相关模型 ====================
+
+class LiveSessionCreate(BaseModel):
+    """场次创建请求"""
+    title: str = Field(..., description="场次标题")
+    platform: str = Field("mock", description="平台来源：douyin/taobao/kuaishou/mock")
+    script: Optional[Dict[str, Any]] = Field(None, description="整场剧本（阶段规划+目标+话术要点）")
+
+
+class LiveSessionUpdate(BaseModel):
+    """场次更新请求"""
+    title: Optional[str] = None
+    platform: Optional[str] = None
+    current_stage: Optional[str] = None
+    script: Optional[Dict[str, Any]] = None
+
+
+class LiveSessionResponse(BaseModel):
+    """场次响应"""
+    id: int
+    title: str
+    platform: str
+    status: str
+    current_stage: str
+    script: Optional[Dict[str, Any]] = None
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class DanmakuMessageResponse(BaseModel):
+    """弹幕消息响应"""
+    id: int
+    session_id: int
+    platform: Optional[str] = None
+    user_id: Optional[str] = None
+    content: str
+    raw: Optional[Dict[str, Any]] = None
+    sent_at: datetime
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class DecisionRecordResponse(BaseModel):
+    """决策记录响应"""
+    id: int
+    session_id: int
+    trigger_reason: Optional[str] = None
+    script: Optional[Dict[str, Any]] = None
+    priority: Optional[str] = None
+    compliance_result: Optional[Dict[str, Any]] = None
+    adopted: bool = False
+    degraded: bool = False
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class LiveMetricCreate(BaseModel):
+    """指标注入请求"""
+    metric_type: str = Field(..., description="指标类型：popularity/danmaku_rate/like/cart_click/order")
+    value: float = Field(..., description="指标值")
+    source: str = Field("manual", description="数据来源：api/manual/mock")
+    recorded_at: Optional[datetime] = Field(None, description="指标记录时间，不传则为当前时间")
+
+
+class LiveMetricResponse(BaseModel):
+    """指标响应"""
+    id: int
+    session_id: int
+    metric_type: str
+    value: float
+    source: str
+    recorded_at: datetime
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

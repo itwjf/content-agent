@@ -19,8 +19,10 @@ def init_database():
     # 创建数据库引擎
     engine = create_engine(settings.database_url)
     
-    # 创建所有表
-    Base.metadata.create_all(bind=engine)
+    # 创建所有表（显式限定：仅自动创建商品表；
+    # 直播场次域新表（live_sessions/danmaku_messages/decision_records/live_metrics）
+    # 由 backend/sql/02_live_tables.sql 手动执行创建，不在此自动创建）
+    Base.metadata.create_all(bind=engine, tables=[Product.__table__])
     print("✅ 数据库表创建完成")
     
     # 创建会话

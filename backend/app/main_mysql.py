@@ -10,6 +10,7 @@ import sys
 from app.core.config import get_settings
 from app.api.v1 import router as api_v1_router
 from app.api.v1.products_mysql_router import router as mysql_products_router
+from app.api.v1.live_router import router as live_router
 from app.services.database_init import init_database
 
 settings = get_settings()
@@ -43,6 +44,7 @@ app.add_middleware(
 # 注册路由
 app.include_router(api_v1_router, prefix="/api/v1", tags=["Agent"])
 app.include_router(mysql_products_router, prefix="/api/v1", tags=["商品管理(MySQL)"])
+app.include_router(live_router, prefix="/api/v1", tags=["直播场次"])
 
 
 @app.get("/")
