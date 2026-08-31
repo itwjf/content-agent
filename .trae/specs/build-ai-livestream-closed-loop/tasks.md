@@ -4,11 +4,11 @@
   - [x] SubTask 1.1: 在 `backend/app/models/` 新增四张表的 SQLAlchemy 模型（字段定义见 spec Requirement 2）
   - [x] SubTask 1.2: 建表 SQL 提供于 `backend/sql/02_live_tables.sql`（按用户要求由用户手动执行，应用不做自动建表）
   - [x] SubTask 1.3: 新增场次 CRUD 服务与路由（创建/开始/结束/查询回放），同步更新 `main_mysql.py` 注册
-- [ ] Task 2: 统一消息模型与平台接入网关骨架
-  - [ ] SubTask 2.1: 定义统一弹幕消息模型与实时指标模型（Pydantic + 内部协议）
-  - [ ] SubTask 2.2: 抽象 `BasePlatformAdapter` 接口（connect/reconnect/消息缓冲/归一化）
-  - [ ] SubTask 2.3: 实现模拟弹幕源适配器（支持场景化弹幕序列回放：高频提问/负面刷屏/购买意向）
-  - [ ] SubTask 2.4: 网关管理路由（查询/切换适配器状态，官方适配器保持禁用占位与配置开关）
+- [x] Task 2: 统一消息模型与平台接入网关骨架
+  - [x] SubTask 2.1: 定义统一弹幕消息模型与实时指标模型（Pydantic + 内部协议）
+  - [x] SubTask 2.2: 抽象 `BasePlatformAdapter` 接口（connect/reconnect/消息缓冲/归一化）
+  - [x] SubTask 2.3: 实现模拟弹幕源适配器（支持场景化弹幕序列回放：高频提问/负面刷屏/购买意向）
+  - [x] SubTask 2.4: 网关管理路由（查询/切换适配器状态，官方适配器保持禁用占位与配置开关）
 - [ ] Task 3: WebSocket 实时通道
   - [ ] SubTask 3.1: 实现 `/ws/live/{session_id}` 端点，推送 danmaku/decision/metric/stage 四类消息
   - [ ] SubTask 3.2: 断线重连与 last_event_id 增量补拉机制

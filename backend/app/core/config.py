@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
 
+    # 平台接入网关配置
+    gateway_mock_interval: float = 2.0          # 模拟源默认出弹幕间隔（秒）
+    douyin_api_enabled: bool = False            # 抖音官方API（需资质，默认禁用）
+    taobao_api_enabled: bool = False            # 淘宝官方API（需资质，默认禁用）
+    kuaishou_api_enabled: bool = False          # 快手官方API（需资质，默认禁用）
+    browser_adapter_enabled: bool = False       # 浏览器采集适配器（Task 7 实现）
+
     # 服务配置
     debug: bool = True
     log_level: str = "INFO"

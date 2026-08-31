@@ -11,7 +11,9 @@ from app.core.config import get_settings
 from app.api.v1 import router as api_v1_router
 from app.api.v1.products_mysql_router import router as mysql_products_router
 from app.api.v1.live_router import router as live_router
+from app.api.gateway_admin import router as gateway_admin_router
 from app.services.database_init import init_database
+from app.services.gateway import gateway_manager
 
 settings = get_settings()
 
@@ -45,6 +47,7 @@ app.add_middleware(
 app.include_router(api_v1_router, prefix="/api/v1", tags=["Agent"])
 app.include_router(mysql_products_router, prefix="/api/v1", tags=["商品管理(MySQL)"])
 app.include_router(live_router, prefix="/api/v1", tags=["直播场次"])
+app.include_router(gateway_admin_router, prefix="/api/v1/gateway", tags=["接入网关"])
 
 
 @app.get("/")
@@ -71,6 +74,13 @@ async def startup_event():
     except Exception as e:
         logger.error(f"❌ 数据库初始化失败: {e}")
         # 不阻止应用启动，因为可能是数据库连接问题
+
+    # 初始化接入网关（注册全部适配器）
+    try:
+        gateway_manager.register_defaults()
+        logger.info("✅ 接入网关初始化完成（适配器已注册）")
+    except Exception as e:
+        logger.error(f"❌ 接入网关初始化失败: {e}")
 
 
 @app.on_event("shutdown")
