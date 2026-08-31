@@ -13,13 +13,13 @@
   - [x] SubTask 3.1: 实现 `/ws/live/{session_id}` 端点，推送 danmaku/decision/metric/stage 四类消息
   - [x] SubTask 3.2: 断线重连与 last_event_id 增量补拉机制
   - [x] SubTask 3.3: 保留 REST `POST /agent/decide` 兼容（未改动现有端点，回归验证在 Task 10 执行）
-- [ ] Task 4: 决策中枢升级——LLM 互动理解（含规则降级）
-  - [ ] SubTask 4.1: LLM 批量弹幕语义分析（意图/情绪/高频问题聚合），输出结构化结果
-  - [ ] SubTask 4.2: 超时/失败自动降级到现有关键词规则方案，标记 `degraded=true` 并记录日志
-- [ ] Task 5: 导演脚本与剧本融合
-  - [ ] SubTask 5.1: 定义导演脚本 JSON 格式（lines/emotion/action/pace/show_product_card/priority/trigger_reason）
-  - [ ] SubTask 5.2: `director/` 服务：融合剧本（阶段规划导入）+ 商品信息 + 互动理解结果，产出导演脚本
-  - [ ] SubTask 5.3: 决策记录（DecisionRecord）自动落库
+- [x] Task 4: 决策中枢升级——LLM 互动理解（含规则降级）
+  - [x] SubTask 4.1: LLM 批量弹幕语义分析（意图/情绪/高频问题聚合），输出结构化结果
+  - [x] SubTask 4.2: 超时/失败自动降级到现有关键词规则方案，标记 `degraded=true` 并记录日志
+- [x] Task 5: 导演脚本与剧本融合
+  - [x] SubTask 5.1: 定义导演脚本 JSON 格式（lines/emotion/action/pace/show_product_card/priority/trigger_reason）
+  - [x] SubTask 5.2: `director/` 服务：融合剧本（阶段规划导入）+ 商品信息 + 互动理解结果，产出导演脚本
+  - [x] SubTask 5.3: 决策记录（DecisionRecord）自动落库
 - [ ] Task 6: 展示适配层（TTS + 2D 数字人形象驱动）
   - [ ] SubTask 6.1: TTS 适配器抽象 + CosyVoice/商用 API 可配置实现
   - [ ] SubTask 6.2: 合规闸门前置：台词过合规模块（复用现有违禁词库），不通过则拦截并告警

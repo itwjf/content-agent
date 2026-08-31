@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.gateway import gateway_manager
 from app.services.live_session_service import LiveSessionService
+from app.services.director.scheduler import decision_scheduler
 
 router = APIRouter()
 
@@ -76,11 +77,28 @@ async def start_adapter_for_session(session_id: int, body: AdapterStartRequest, 
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    # 联动启动决策循环（弹幕窗口 → 互动理解 → 导演脚本 → 落库 → WS推送）
+    decision_scheduler.start(session_id, options=body.options)
     return AdapterStartResponse(session_id=session_id, adapter_name=body.adapter_name, status=status)
 
 
 @router.post("/sessions/{session_id}/stop", response_model=dict)
 async def stop_adapter_for_session(session_id: int):
-    """停止场次的弹幕来源适配器"""
+    """停止场次的弹幕来源适配器与决策循环"""
     stopped = await gateway_manager.stop_for_session(session_id)
+    await decision_scheduler.stop(session_id)
     return {"session_id": session_id, "stopped": stopped}
+
+
+@router.post("/sessions/{session_id}/decide", response_model=dict)
+async def decide_now(session_id: int, db: Session = Depends(get_db)):
+    """立即触发一轮决策（使用当前窗口缓冲的弹幕，用于测试与手动兜底）"""
+    service = LiveSessionService(db)
+    if not service.get_session(session_id):
+        raise HTTPException(status_code=404, detail="场次不存在")
+    result = await decision_scheduler.decide_now(session_id)
+    if result is None:
+        return {"session_id": session_id, "produced": False,
+                "message": "窗口缓冲无新弹幕或场次未开播"}
+    return {"session_id": session_id, "produced": True, "script": result}

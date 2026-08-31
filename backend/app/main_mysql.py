@@ -16,6 +16,7 @@ from app.api.ws_live import router as ws_live_router
 from app.services.database_init import init_database
 from app.services.gateway import gateway_manager
 from app.services.ws_hub import ws_hub
+from app.services.director.scheduler import decision_scheduler
 
 settings = get_settings()
 
@@ -82,9 +83,10 @@ async def startup_event():
     # 初始化接入网关（注册全部适配器）
     try:
         gateway_manager.register_defaults()
-        # 弹幕事件接入 WebSocket 实时推送
+        # 弹幕事件接入 WebSocket 实时推送 与 决策调度器窗口缓冲
         gateway_manager.add_hook(ws_hub.push_danmaku)
-        logger.info("✅ 接入网关初始化完成（适配器已注册，WS推送已挂接）")
+        gateway_manager.add_hook(decision_scheduler.feed)
+        logger.info("✅ 接入网关初始化完成（适配器已注册，WS推送/决策调度已挂接）")
     except Exception as e:
         logger.error(f"❌ 接入网关初始化失败: {e}")
 

@@ -39,6 +39,8 @@ class Settings(BaseSettings):
 
     # 决策中枢配置
     llm_interaction_timeout: float = 3.0        # LLM 互动理解超时（秒），超时降级规则方案
+    decision_window_seconds: float = 10.0       # 决策滑动窗口（秒）
+    decision_llm_timeout: float = 5.0           # 导演脚本 LLM 超时（秒），超时降级规则模板
 
     # 服务配置
     debug: bool = True
