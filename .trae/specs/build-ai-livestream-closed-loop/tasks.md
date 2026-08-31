@@ -9,10 +9,10 @@
   - [x] SubTask 2.2: 抽象 `BasePlatformAdapter` 接口（connect/reconnect/消息缓冲/归一化）
   - [x] SubTask 2.3: 实现模拟弹幕源适配器（支持场景化弹幕序列回放：高频提问/负面刷屏/购买意向）
   - [x] SubTask 2.4: 网关管理路由（查询/切换适配器状态，官方适配器保持禁用占位与配置开关）
-- [ ] Task 3: WebSocket 实时通道
-  - [ ] SubTask 3.1: 实现 `/ws/live/{session_id}` 端点，推送 danmaku/decision/metric/stage 四类消息
-  - [ ] SubTask 3.2: 断线重连与 last_event_id 增量补拉机制
-  - [ ] SubTask 3.3: 保留 REST `POST /agent/decide` 兼容（回归验证现有行为不变）
+- [x] Task 3: WebSocket 实时通道
+  - [x] SubTask 3.1: 实现 `/ws/live/{session_id}` 端点，推送 danmaku/decision/metric/stage 四类消息
+  - [x] SubTask 3.2: 断线重连与 last_event_id 增量补拉机制
+  - [x] SubTask 3.3: 保留 REST `POST /agent/decide` 兼容（未改动现有端点，回归验证在 Task 10 执行）
 - [ ] Task 4: 决策中枢升级——LLM 互动理解（含规则降级）
   - [ ] SubTask 4.1: LLM 批量弹幕语义分析（意图/情绪/高频问题聚合），输出结构化结果
   - [ ] SubTask 4.2: 超时/失败自动降级到现有关键词规则方案，标记 `degraded=true` 并记录日志

@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     kuaishou_api_enabled: bool = False          # 快手官方API（需资质，默认禁用）
     browser_adapter_enabled: bool = False       # 浏览器采集适配器（Task 7 实现）
 
+    # 决策中枢配置
+    llm_interaction_timeout: float = 3.0        # LLM 互动理解超时（秒），超时降级规则方案
+
     # 服务配置
     debug: bool = True
     log_level: str = "INFO"
