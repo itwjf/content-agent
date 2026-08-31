@@ -41,6 +41,9 @@ ENV/
 *.log
 logs/
 
+# TTS 输出音频（运行时产物，不入库）
+tts_output/
+
 # Database
 *.db
 *.sqlite3

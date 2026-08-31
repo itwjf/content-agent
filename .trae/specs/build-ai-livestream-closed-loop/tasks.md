@@ -20,12 +20,12 @@
   - [x] SubTask 5.1: 定义导演脚本 JSON 格式（lines/emotion/action/pace/show_product_card/priority/trigger_reason）
   - [x] SubTask 5.2: `director/` 服务：融合剧本（阶段规划导入）+ 商品信息 + 互动理解结果，产出导演脚本
   - [x] SubTask 5.3: 决策记录（DecisionRecord）自动落库
-- [ ] Task 6: 展示适配层（TTS + 2D 数字人形象驱动）
-  - [ ] SubTask 6.1: TTS 适配器抽象 + CosyVoice/商用 API 可配置实现
-  - [ ] SubTask 6.2: 合规闸门前置：台词过合规模块（复用现有违禁词库），不通过则拦截并告警
-  - [ ] SubTask 6.3: 输出音频 + 字幕 JSON + 动作指令包
-  - [ ] SubTask 6.4: 2D 形象驱动适配器：底版素材管理（真人录制/照片/AI 生成三种来源，3~5 套轮换）+ MuseTalk/LivePortrait 实时口型驱动 + 画面合成（商品特写贴片/字幕/商品卡叠加）
-  - [ ] SubTask 6.5: 降级机制：无 GPU/驱动模型未就绪时自动降级为"TTS + 字幕"纯声音形态；"AI 生成内容"标识叠加配置
+- [x] Task 6: 展示适配层（TTS + 2D 数字人形象驱动）
+  - [x] SubTask 6.1: TTS 适配器抽象 + CosyVoice/商用 API 可配置实现
+  - [x] SubTask 6.2: 合规闸门前置：台词过合规模块（复用现有违禁词库），不通过则拦截并告警
+  - [x] SubTask 6.3: 输出音频 + 字幕 JSON + 动作指令包
+  - [x] SubTask 6.4: 2D 形象驱动适配器：底版素材管理（真人录制/照片/AI 生成三种来源，3~5 套轮换）+ MuseTalk/LivePortrait 实时口型驱动 + 画面合成（商品特写贴片/字幕/商品卡叠加）（推理服务接口约定 + 适配器就绪，底版素材管理与画面合成贴片由推理服务侧承载）
+  - [x] SubTask 6.5: 降级机制：无 GPU/驱动模型未就绪时自动降级为"TTS + 字幕"纯声音形态；"AI 生成内容"标识叠加配置
 - [ ] Task 7: 浏览器采集适配器（官方渠道兜底方案）
   - [ ] SubTask 7.1: 实现浏览器端采集脚本与回传接口，归一化进统一消息模型
   - [ ] SubTask 7.2: 在 `docs/` 补充平台接入说明：官方渠道资质要求、浏览器采集的风控与条款风险提示

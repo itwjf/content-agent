@@ -113,6 +113,10 @@ class LiveConnectionHub:
         """推送直播阶段变更事件"""
         await self._push(session_id, "stage", stage_info)
 
+    async def push_alert(self, session_id: int, alert: dict) -> None:
+        """推送告警事件（合规拦截/降级等，供监场台提示）"""
+        await self._push(session_id, "alert", alert)
+
 
 # 进程级单例
 ws_hub = LiveConnectionHub()

@@ -16,6 +16,7 @@ from app.services.gateway.models import DanmakuEvent
 from app.services.live_session_service import LiveSessionService
 from app.services.modules.compliance_module import compliance_module
 from app.services.modules.structure_engine import structure_engine
+from app.services.showcase.service import showcase_service
 from app.services.ws_hub import ws_hub
 
 MAX_BUFFER = 100  # 单场次窗口缓冲上限
@@ -132,6 +133,21 @@ class DecisionScheduler:
             **script.to_persist_dict(),
             "record_id": record.id,
         })
+
+        # 6. 展示适配：合规硬闸门 → TTS → 字幕/动作包 →（可选）数字人形象
+        try:
+            package = await showcase_service.present(script)
+            await ws_hub._push(session_id, "presentation", package)
+            if package["mode"] == "blocked" or package["compliance_gate"]["blocked_lines"]:
+                await ws_hub.push_alert(session_id, {
+                    "level": "warning",
+                    "kind": "compliance",
+                    "message": "部分台词被合规闸门拦截，未进入播出环节",
+                    "detail": package["compliance_gate"],
+                })
+        except Exception as e:
+            logger.error(f"[决策] 场次 {session_id} 展示适配失败（不影响决策链路）: {e}")
+
         logger.info(f"[决策] 场次 {session_id} 产出决策 #{record.id}（{script.source}，{script.priority}优先级）")
         return script.to_persist_dict()
 

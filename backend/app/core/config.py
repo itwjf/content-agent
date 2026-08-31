@@ -42,6 +42,20 @@ class Settings(BaseSettings):
     decision_window_seconds: float = 10.0       # 决策滑动窗口（秒）
     decision_llm_timeout: float = 5.0           # 导演脚本 LLM 超时（秒），超时降级规则模板
 
+    # 展示适配层配置（TTS）
+    tts_provider: str = "mock"                  # TTS 提供方：mock/cosyvoice/http
+    tts_cosyvoice_base_url: Optional[str] = None    # 本地 CosyVoice HTTP 服务地址
+    tts_http_base_url: Optional[str] = None         # 商用 TTS API 地址
+    tts_http_api_key: Optional[str] = None          # 商用 TTS API 密钥（不落代码）
+    tts_voice: str = "default"                      # 音色
+    tts_output_dir: str = "./tts_output"            # 音频文件输出目录
+
+    # 展示适配层配置（2D 数字人形象驱动）
+    avatar_enabled: bool = False                    # 是否启用形象驱动（需 GPU 推理服务）
+    avatar_service_url: Optional[str] = None        # MuseTalk/LivePortrait 推理服务地址
+    avatar_base_video_id: str = "default"           # 底版素材ID（真人录制/照片/AI生成，3~5套轮换）
+    avatar_ai_label: bool = True                    # 是否叠加"AI 生成内容"标识（平台报备要求）
+
     # 服务配置
     debug: bool = True
     log_level: str = "INFO"
