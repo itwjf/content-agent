@@ -11,6 +11,7 @@
             class="header-menu"
           >
             <el-menu-item index="/">提词Demo</el-menu-item>
+            <el-menu-item index="/monitor">监场台</el-menu-item>
             <el-menu-item index="/products">商品管理</el-menu-item>
           </el-menu>
           <el-tag type="success">Agent Demo</el-tag>

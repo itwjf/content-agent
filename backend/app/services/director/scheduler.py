@@ -17,6 +17,7 @@ from app.services.live_session_service import LiveSessionService
 from app.services.modules.compliance_module import compliance_module
 from app.services.modules.structure_engine import structure_engine
 from app.services.showcase.service import showcase_service
+from app.services.strategy.engine import strategy_engine
 from app.services.ws_hub import ws_hub
 
 MAX_BUFFER = 100  # 单场次窗口缓冲上限
@@ -30,6 +31,7 @@ class DecisionScheduler:
         self._buffers: dict[int, list[DanmakuEvent]] = defaultdict(list)
         self._loops: dict[int, asyncio.Task] = {}
         self._options: dict[int, dict] = {}
+        self._paused: set[int] = set()  # 人工接管：暂停自动决策（弹幕仍缓冲）
 
     # ---------- 生命周期 ----------
 
@@ -57,6 +59,33 @@ class DecisionScheduler:
     def is_running(self, session_id: int) -> bool:
         return session_id in self._loops
 
+    # ---------- 人工接管 ----------
+
+    def pause(self, session_id: int) -> bool:
+        """人工接管：暂停自动决策（弹幕仍进缓冲，恢复后一并消费）"""
+        if session_id not in self._loops:
+            return False
+        self._paused.add(session_id)
+        logger.info(f"[决策] 场次 {session_id} 自动决策已暂停（人工接管）")
+        return True
+
+    def resume(self, session_id: int) -> bool:
+        """恢复自动决策"""
+        if session_id not in self._loops:
+            return False
+        self._paused.discard(session_id)
+        logger.info(f"[决策] 场次 {session_id} 自动决策已恢复")
+        return True
+
+    def is_paused(self, session_id: int) -> bool:
+        return session_id in self._paused
+
+    def control_status(self, session_id: int) -> str:
+        """自动决策状态：running / paused / stopped"""
+        if session_id not in self._loops:
+            return "stopped"
+        return "paused" if session_id in self._paused else "running"
+
     # ---------- 事件入口 ----------
 
     def feed(self, event: DanmakuEvent) -> None:
@@ -71,6 +100,8 @@ class DecisionScheduler:
     async def _loop(self, session_id: int) -> None:
         while True:
             await asyncio.sleep(self.window)
+            if session_id in self._paused:
+                continue  # 人工接管中：跳过自动决策
             try:
                 await self.decide_now(session_id)
             except asyncio.CancelledError:
@@ -103,13 +134,25 @@ class DecisionScheduler:
             interaction = await llm_interaction_engine.analyze(messages, product_context=product_name)
             interaction["_messages"] = messages  # 供导演引擎引用弹幕原文
 
-            # 2. 导演引擎产出脚本（内含规则降级；融合剧本与商品）
+            # 1.5 策略引擎：累计本轮互动反馈（负面/提问/购买意向）并评估调权，命中规则会落库+WS推送
+            emotion_stats = interaction.get("情绪统计") or {}
+            strategy_engine.feedback(
+                session_id,
+                total=len(messages),
+                negative=len(interaction.get("负面反馈", [])),
+                questions=len(interaction.get("高频问题", [])),
+                buy_intent=int(emotion_stats.get("购买意向", 0) or 0),
+            )
+            strategy_weights = strategy_engine.get_weights(session_id)
+
+            # 2. 导演引擎产出脚本（内含规则降级；融合剧本、商品与策略权重）
             script = await director_engine.produce(
                 session_id=session_id,
                 stage=stage,
                 product_data=product,
                 interaction_result=interaction,
                 script_stages=script_stages,
+                strategy_weights=strategy_weights,
             )
 
             # 3. 合规检查与修正（违禁词自动替换为建议词，结果随决策落库；TTS 前还有硬闸门）

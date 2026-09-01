@@ -46,6 +46,7 @@ class DirectorEngine:
         product_data: Optional[dict],
         interaction_result: dict,
         script_stages: Optional[list] = None,
+        strategy_weights: Optional[dict] = None,
     ) -> DirectorScript:
         """产出导演脚本：LLM 优先，规则降级
 
@@ -55,13 +56,15 @@ class DirectorEngine:
             product_data: 商品数据（中文键：产品名称/价格/成分/功效/规格）
             interaction_result: LLM互动理解结果（含 degraded 标记）
             script_stages: 整场剧本的阶段规划（[{stage, goal, key_points, talk_points}]）
+            strategy_weights: 策略引擎动态权重（促单/安抚/答疑/推进），引导本轮侧重点
         """
         stage_plan = self._find_stage_plan(script_stages, stage)
         degraded = bool(interaction_result.get("degraded"))
 
         try:
             script = await asyncio.wait_for(
-                self._llm_produce(session_id, stage, stage_plan, product_data, interaction_result),
+                self._llm_produce(session_id, stage, stage_plan, product_data,
+                                  interaction_result, strategy_weights),
                 timeout=self.llm_timeout,
             )
             script.degraded = degraded
@@ -72,19 +75,22 @@ class DirectorEngine:
             reason = f"导演脚本 LLM 失败: {type(e).__name__}: {e}"
 
         logger.warning(f"[导演] {reason}，降级为规则模板")
-        script = self._rule_produce(session_id, stage, stage_plan, product_data, interaction_result)
+        script = self._rule_produce(session_id, stage, stage_plan, product_data,
+                                    interaction_result, strategy_weights)
         script.degraded = True
         script.trigger_reason = f"{script.trigger_reason}（{reason}）" if script.trigger_reason else reason
         return script
 
     # ---------- LLM 产出 ----------
 
-    async def _llm_produce(self, session_id, stage, stage_plan, product_data, interaction_result) -> DirectorScript:
+    async def _llm_produce(self, session_id, stage, stage_plan, product_data, interaction_result,
+                           strategy_weights=None) -> DirectorScript:
         lines_desc = "\n".join(f"{i + 1}. {m}" for i, m in enumerate(interaction_result.get("_messages", []))[:10])
         high_freq = json.dumps(interaction_result.get("高频问题", [])[:5], ensure_ascii=False)
         negatives = json.dumps(interaction_result.get("负面反馈", [])[:5], ensure_ascii=False)
         insight = interaction_result.get("关键洞察", "无")
         emotion_stats = json.dumps(interaction_result.get("情绪统计", {}), ensure_ascii=False)
+        weights_desc = json.dumps(strategy_weights or {}, ensure_ascii=False)
 
         plan_desc = "无（使用默认阶段目标）"
         if stage_plan:
@@ -106,6 +112,8 @@ class DirectorEngine:
 - 关键洞察：{insight}
 - 弹幕原文抽样：
 {lines_desc}
+
+策略权重（实时指标驱动，数值越高本轮越应侧重）：{weights_desc}
 
 请生成本轮导演脚本。"""
 
@@ -140,15 +148,20 @@ class DirectorEngine:
 
     # ---------- 规则降级 ----------
 
-    def _rule_produce(self, session_id, stage, stage_plan, product_data, interaction_result) -> DirectorScript:
-        """规则模板：负面安抚 > 高频问题应答 > 购买意向促单 > 阶段推进"""
+    def _rule_produce(self, session_id, stage, stage_plan, product_data,
+                      interaction_result, strategy_weights=None) -> DirectorScript:
+        """规则模板：按策略权重在「安抚/答疑/促单/推进」已触发的分支中择优（同权重保持原优先序）"""
         negatives = interaction_result.get("负面反馈", [])
         questions = interaction_result.get("高频问题", [])
         emotion_stats = interaction_result.get("情绪统计", {})
+        w = strategy_weights or {}
+
+        # 候选分支：(权重维度, 默认优先序, 脚本工厂)；仅触发的分支进入竞争
+        candidates: list[tuple[str, float, int, DirectorScript]] = []
 
         # 1. 负面反馈聚集 → 安抚 + 价值强调
         if negatives:
-            return DirectorScript(
+            candidates.append(("安抚", w.get("安抚", 1.0), 0, DirectorScript(
                 session_id=session_id, stage=stage,
                 lines=[DirectorLine(
                     text="有宝宝提到价格问题，咱们这款用的是正规配方，一分价钱一分货，大家理性看待，适合自己的才是最好的。",
@@ -156,29 +169,32 @@ class DirectorEngine:
                 )],
                 priority="高", trigger_reason="负面反馈聚集，启动安抚策略",
                 source="rule",
-            )
+            )))
 
         # 2. 高频问题 → 复用卖点模块匹配话术
         if questions:
             top_question = questions[0].get("问题", "")
             matched = []
             if product_data:
-                sell_result = selling_point_module.generate_selling_points(product_data, [{"关键词": top_question, "优先级": 85}])
+                sell_result = selling_point_module.generate_selling_points(
+                    product_data, [{"关键词": top_question, "优先级": 85}])
                 matched = sell_result.get("匹配卖点", [])
-            text = matched[0]["话术"] if matched else f"很多宝宝在问{top_question}，这款产品正好针对这个问题做了专门设计，大家放心。"
-            return DirectorScript(
+            text = matched[0]["话术"] if matched else \
+                f"很多宝宝在问{top_question}，这款产品正好针对这个问题做了专门设计，大家放心。"
+            candidates.append(("答疑", w.get("答疑", 1.0), 1, DirectorScript(
                 session_id=session_id, stage=stage,
-                lines=[DirectorLine(text=text, emotion="enthusiastic", action="拿起产品展示", pace="normal")],
+                lines=[DirectorLine(text=text, emotion="enthusiastic",
+                                    action="拿起产品展示", pace="normal")],
                 show_product_card=bool(product_data),
                 product_sku=(product_data or {}).get("sku_id"),
                 priority="高", trigger_reason=f"弹幕高频问题：{top_question}",
                 source="rule",
-            )
+            )))
 
         # 3. 购买意向 → 促单
         if emotion_stats.get("购买意向", 0) > 0:
             product_name = (product_data or {}).get("产品名称", "这款产品")
-            return DirectorScript(
+            candidates.append(("促单", w.get("促单", 1.0), 2, DirectorScript(
                 session_id=session_id, stage=stage,
                 lines=[DirectorLine(
                     text=f"看到很多宝宝想拍{product_name}，点击下方商品卡就可以下单，库存有限，喜欢的宝宝抓紧哦！",
@@ -188,18 +204,28 @@ class DirectorEngine:
                 product_sku=(product_data or {}).get("sku_id"),
                 priority="高", trigger_reason="弹幕购买意向集中，推商品卡促单",
                 source="rule",
-            )
+            )))
 
-        # 4. 默认 → 阶段推进话术
+        # 4. 默认 → 阶段推进话术（始终可选）
         talk_points = (stage_plan or {}).get("talk_points") or []
         tips = (stage_plan or {}).get("key_points") or []
-        text = talk_points[0] if talk_points else (tips[0] if tips else "感谢家人们的陪伴，有问题随时打在公屏上，主播都会一一回复！")
-        return DirectorScript(
+        text = talk_points[0] if talk_points else \
+            (tips[0] if tips else "感谢家人们的陪伴，有问题随时打在公屏上，主播都会一一回复！")
+        candidates.append(("推进", w.get("推进", 1.0), 3, DirectorScript(
             session_id=session_id, stage=stage,
             lines=[DirectorLine(text=text, emotion="warm", action="保持自然互动", pace="normal")],
             priority="中", trigger_reason="无高优事件，按剧本推进当前阶段",
             source="rule",
-        )
+        )))
+
+        # 按权重择优；同权重时默认优先序靠前者胜（max 稳定取先出现者）
+        best = max(candidates, key=lambda c: c[1])
+        script = best[3]
+        # 策略权重改变了默认取舍（非首个候选分支胜出）时，在触发原因中体现（可观测）
+        earlier = [c for c in candidates if c[2] < best[2]]
+        if earlier and best[1] > max(c[1] for c in earlier):
+            script.trigger_reason = f"{script.trigger_reason}（策略权重主导：{best[0]}={best[1]}）"
+        return script
 
     # ---------- 剧本工具 ----------
 

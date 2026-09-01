@@ -11,6 +11,8 @@ from app.core.config import get_settings
 from app.api.v1 import router as api_v1_router
 from app.api.v1.products_mysql_router import router as mysql_products_router
 from app.api.v1.live_router import router as live_router
+from app.api.strategy_api import router as strategy_api_router
+from app.api.live_control import router as live_control_router
 from app.api.gateway_admin import router as gateway_admin_router
 from app.api.browser_collect import router as browser_collect_router
 from app.api.showcase import router as showcase_router
@@ -52,6 +54,8 @@ app.add_middleware(
 app.include_router(api_v1_router, prefix="/api/v1", tags=["Agent"])
 app.include_router(mysql_products_router, prefix="/api/v1", tags=["商品管理(MySQL)"])
 app.include_router(live_router, prefix="/api/v1", tags=["直播场次"])
+app.include_router(strategy_api_router, prefix="/api/v1/live", tags=["实时指标与策略"])
+app.include_router(live_control_router, prefix="/api/v1/live", tags=["监场台人工控制"])
 app.include_router(gateway_admin_router, prefix="/api/v1/gateway", tags=["接入网关"])
 app.include_router(browser_collect_router, prefix="/api/v1/gateway/browser", tags=["浏览器采集"])
 app.include_router(showcase_router, prefix="/api/v1/showcase", tags=["展示适配"])

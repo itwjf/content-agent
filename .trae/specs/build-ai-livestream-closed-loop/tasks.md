@@ -29,16 +29,16 @@
 - [x] Task 7: 浏览器采集适配器（官方渠道兜底方案）
   - [x] SubTask 7.1: 实现浏览器端采集脚本与回传接口，归一化进统一消息模型
   - [x] SubTask 7.2: 在 `docs/` 补充平台接入说明：官方渠道资质要求、浏览器采集的风控与条款风险提示
-- [ ] Task 8: 实时指标采集与策略引擎
-  - [ ] SubTask 8.1: LiveMetric 采集入库（官方 API 拉取占位 + 监场台/模拟源手动注入）
-  - [ ] SubTask 8.2: `strategy/` 策略引擎：滑动窗口指标计算 + 3~5 条可配置基础策略规则（权重动态调整）
-  - [ ] SubTask 8.3: 策略调整记录（原因 + 前后权重快照）落库与查询接口
-- [ ] Task 9: 前端监场台改版
-  - [ ] SubTask 9.1: WebSocket 客户端（自动重连 + 增量补拉）
-  - [ ] SubTask 9.2: 监场台页面：弹幕流、导演脚本展示、阶段进度、指标曲线
-  - [ ] SubTask 9.3: 人工接管/恢复：暂停自动决策、手动话术输入（过合规检查）、TTS 音频播放
-- [ ] Task 10: 端到端联调与验收
-  - [ ] SubTask 10.1: 模拟源全链路验证：弹幕注入 → LLM 决策 → 导演脚本 → 合规 → TTS → 前端监场台
+- [x] Task 8: 实时指标采集与策略引擎
+  - [x] SubTask 8.1: LiveMetric 采集入库（官方 API 拉取占位 + 监场台/模拟源手动注入）
+  - [x] SubTask 8.2: `strategy/` 策略引擎：滑动窗口指标计算 + 3~5 条可配置基础策略规则（权重动态调整）
+  - [x] SubTask 8.3: 策略调整记录（原因 + 前后权重快照）落库与查询接口（建表 SQL：`backend/sql/03_strategy_tables.sql`，需手动执行）
+- [x] Task 9: 前端监场台改版
+  - [x] SubTask 9.1: WebSocket 客户端（自动重连 + 增量补拉）
+  - [x] SubTask 9.2: 监场台页面：弹幕流、导演脚本展示、阶段进度、指标曲线
+  - [x] SubTask 9.3: 人工接管/恢复：暂停自动决策、手动话术输入（过合规检查）、TTS 音频播放
+- [ ] Task 10: 端到端联调与验收 ⚠️【依赖 backend/.env 配置：LLM_API_KEY 必填 + DATABASE_URL 指向已建表的本机 MySQL；可选 SILICONFLOW/TTS/浏览器采集配置见 .env.example】
+  - [ ] SubTask 10.1: 模拟源全链路验证：弹幕注入 → LLM 决策 → 导演脚本 → 合规 → TTS → 前端监场台（需 LLM_API_KEY）
   - [ ] SubTask 10.2: 指标回流验证：注入人气/转化数据 → 策略引擎调权 → 决策行为变化可观测
   - [ ] SubTask 10.3: 降级与异常场景验证：LLM 超时降级、WebSocket 断线重连、合规拦截
 
@@ -50,3 +50,22 @@
 - Task 6 依赖 Task 5；Task 7 依赖 Task 2（可与 Task 4/5/6 并行）
 - Task 8 依赖 Task 1、Task 3；Task 9 依赖 Task 3、Task 6
 - Task 10 依赖全部任务完成
+
+# 环境配置依赖说明
+
+- Task 1~9 的开发与代码级验证（单元冒烟测试）不需要 `.env`，用临时环境变量绕过启动校验即可
+- **Task 10 端到端联调必须先配置 `backend/.env`**：最少需 `LLM_API_KEY`（启动强依赖）与 `DATABASE_URL`（指向用户手动建表的本机 MySQL，本机运行时不能用默认的 docker 主机名 mysql:3306）
+- 其余配置（SILICONFLOW_API_KEY / TTS_* / AVATAR_* / BROWSER_*)按联调范围可选，详见 `backend/.env.example` 与 `docs/platform-access.md`
+
+# 用户手动待办（Task 10 联调前完成）
+
+- [ ] 【必须】执行建表 SQL：`mysql -u <user> -p <库名> < backend/sql/03_strategy_tables.sql`（Task 8 新增的 `strategy_adjustments` 策略调整记录表）
+- [ ] 【必须】创建 `backend/.env`（复制 `backend/.env.example`），至少填写：
+  - `LLM_API_KEY`（后端启动强依赖，缺失时应用无法启动）
+  - `DATABASE_URL=mysql+pymysql://<用户>:<密码>@localhost:3306/<库名>`（本机运行必须用 localhost，不能用默认的 docker 主机名）
+- [ ] 【可选·按需】`.env` 可选项：
+  - `SILICONFLOW_API_KEY`（RAG 语义检索用）
+  - `BROWSER_ADAPTER_ENABLED=true` + `BROWSER_COLLECT_TOKEN=<随机串>`（Task 7 浏览器采集；不配可用运行时接口代替启用）
+  - `TTS_PROVIDER` / `AVATAR_*`（Task 6 TTS 与数字人；默认 mock 静音 + 纯声音形态，联调可先不配）
+- [ ] 【本机运行时】修复本机 Python 环境缺失依赖：`pip install pymupdf python-docx`（requirements 已声明但本机未装；PyMuPDF 在 Python 3.13 下无预编译 wheel 会源码编译失败，建议用 Python 3.11 环境或直接走 Docker 部署，Docker 不受影响）。影响范围：商品上传模块（`product_upload.py`）导入失败 → 本机启动 `main_mysql` 失败
+- [ ] 【联调时确认】MySQL 已建好 `02_live_tables.sql`（Task 1 四张表）与 `03_strategy_tables.sql`（Task 8 一张表）共五张表

@@ -92,3 +92,24 @@ class LiveMetric(Base):
 
     def __repr__(self):
         return f"<LiveMetric(id={self.id}, session_id={self.session_id}, type='{self.metric_type}', value={self.value})>"
+
+
+class StrategyAdjustment(Base):
+    """策略调整记录模型（可审计的优化轨迹）"""
+    __tablename__ = "strategy_adjustments"
+
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    session_id = Column(Integer, nullable=False, index=True, comment="所属场次ID")
+    rules_hit = Column(JSON, comment="命中的规则列表（规则名+原因+指标快照）")
+    reason = Column(String(500), comment="调整原因（人类可读汇总）")
+    weights_before = Column(JSON, comment="调整前权重快照")
+    weights_after = Column(JSON, comment="调整后权重快照")
+
+    created_at = Column(DateTime, server_default=func.now(), comment="调整时间")
+
+    __table_args__ = (
+        Index("idx_strategy_session_time", "session_id", "created_at"),
+    )
+
+    def __repr__(self):
+        return f"<StrategyAdjustment(id={self.id}, session_id={self.session_id}, reason='{self.reason[:30]}')>"

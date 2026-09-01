@@ -43,6 +43,16 @@ class Settings(BaseSettings):
     decision_window_seconds: float = 10.0       # 决策滑动窗口（秒）
     decision_llm_timeout: float = 5.0           # 导演脚本 LLM 超时（秒），超时降级规则模板
 
+    # 实时指标与策略引擎配置
+    strategy_window_seconds: float = 60.0       # 滑动窗口长度（秒）
+    strategy_eval_interval: float = 10.0        # 策略评估最小间隔（秒），防抖动
+    strategy_popularity_rise: float = 0.2       # 人气上涨阈值（窗口内相对涨幅）
+    strategy_popularity_drop: float = 0.15      # 人气下跌阈值（窗口内相对跌幅）
+    strategy_negative_ratio: float = 0.3        # 负面弹幕占比阈值
+    strategy_danmaku_rate_high: float = 15.0    # 高频弹幕阈值（条/分钟）
+    strategy_conversion_high: float = 10.0      # 窗口内转化事件（购物车点击+下单）阈值
+    metric_api_pull_enabled: bool = False       # 官方API指标拉取（需平台资质，默认禁用）
+
     # 展示适配层配置（TTS）
     tts_provider: str = "mock"                  # TTS 提供方：mock/cosyvoice/http
     tts_cosyvoice_base_url: Optional[str] = None    # 本地 CosyVoice HTTP 服务地址
